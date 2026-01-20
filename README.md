@@ -1,31 +1,44 @@
-[![Build Status](https://travis-ci.org/microservices-demo/microservices-demo.svg?branch=master)](https://travis-ci.org/microservices-demo/microservices-demo)
+# Sock Shop Microservices Demo
 
-# DEPRECATED: Sock Shop : A Microservice Demo Application
+A microservices demo application for an online sock shop.
 
-The application is the user-facing part of an online shop that sells socks. It is intended to aid the demonstration and testing of microservice and cloud native technologies.
+## Prerequisites
 
-It is built using [Spring Boot](http://projects.spring.io/spring-boot/), [Go kit](http://gokit.io) and [Node.js](https://nodejs.org/) and is packaged in Docker containers.
+- Kubernetes cluster (e.g., Docker Desktop, minikube, kind)
+- `kubectl` configured to connect to your cluster
 
-You can read more about the [application design](./internal-docs/design.md).
+## Deploy
 
-## Deployment Platforms
+```bash
+cd deploy/kubernetes
+./deploy.sh
+```
 
-The [deploy folder](./deploy/) contains scripts and instructions to provision the application onto your favourite platform. 
+This deploys:
+- Sock Shop services (namespace: `sock-shop`)
+- Prometheus + Grafana (namespace: `monitoring`)
+- Jaeger tracing (namespace: `jaeger`)
 
-Please let us know if there is a platform that you would like to see supported.
+## Port Forward
 
-## Bugs, Feature Requests and Contributing
+```bash
+cd deploy/kubernetes
+./port-forward.sh
+```
 
-We'd love to see community contributions. We like to keep it simple and use Github issues to track bugs and feature requests and pull requests to manage contributions. See the [contribution information](.github/CONTRIBUTING.md) for more information.
+Access points:
+- Sock Shop: http://localhost:8080
+- Grafana: http://localhost:3001 (admin/admin)
+- Jaeger UI: http://localhost:16686
 
-## Screenshot
+Press `Ctrl+C` to stop all port forwards.
 
-![Sock Shop frontend](https://github.com/microservices-demo/microservices-demo.github.io/raw/master/assets/sockshop-frontend.png)
+## Important
 
-## Visualizing the application
+Pods may show as started but need to be `1/1 Running` before the catalogue appears on the demo site. Check status with:
 
-Use [Weave Scope](http://weave.works/products/weave-scope/) or [Weave Cloud](http://cloud.weave.works/) to visualize the application once it's running in the selected [target platform](./deploy/).
+```bash
+kubectl get pods -n sock-shop
+```
 
-![Sock Shop in Weave Scope](https://github.com/microservices-demo/microservices-demo.github.io/raw/master/assets/sockshop-scope.png)
-
-## 
+Wait until all pods show `1/1` in the READY column.
