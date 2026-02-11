@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
       - name: carts-db
-        image: mongo
+        # Carts uses MongoDB driver 4.x (Spring Boot 2.7); compatible with MongoDB 5–8.
+        image: mongo:7
         ports:
         - name: mongo
           containerPort: 27017

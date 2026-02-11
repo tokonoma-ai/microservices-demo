@@ -1,6 +1,20 @@
-# Installing sock-shop on Kubernetes
+# Installing sock-shop on Kubernetes (kind)
 
-See the [documentation](https://microservices-demo.github.io/deployment/kubernetes-minikube.html) on how to deploy Sock Shop using Minikube.
+This repo’s instructions target a **kind** cluster. From the repository root:
+
+## Deploy (Kustomize)
+
+```bash
+./bin/deploy              # official images (overlay: default)
+./bin/deploy dev           # your locally built images, tag "dev" (build + kind load docker-image first)
+```
+
+- **default** overlay: applies `deploy/kubernetes/manifests`; images from Docker Hub (`weaveworksdemos/*`).
+- **dev** overlay: same but all app images use tag `dev`. Build images locally and load into kind (see [DEVELOP.md](../../DEVELOP.md)); nothing is pushed to Docker Hub.
+
+## Carts and MongoDB version
+
+The carts service uses **Spring Boot 2.7**, **Java 17**, and the **MongoDB Java driver 4.x** (via Spring Data MongoDB 3.x). It talks to MongoDB over the modern wire protocol, so carts-db in the manifests uses **mongo:7** (driver 4.x supports MongoDB 5–8). Do not use legacy mongo:4.4 with this stack; the driver no longer uses OP_QUERY.
 
 ## Kubernetes manifests
 
@@ -30,3 +44,12 @@ ssh -i $KEY -L 3000:$NODE_IN_CLUSTER:31300 -L 9090:$NODE_IN_CLUSTER:31090 ubuntu
 Where all the pertinent information should be entered. Grafana and Prometheus will be available on `http://localhost:3000` or `:9090`.
 
 If on Minikube, you can connect via the VM IP address and the NodePort.
+
+## Build from source
+
+The application services (carts, catalogue, front-end, orders, payment, queue-master, shipping, user) live in separate repositories under the [microservices-demo](https://github.com/microservices-demo) GitHub organization. This repo contains only deployment config and a few auxiliaries (openapi, healthcheck).
+
+To build and deploy using your own images:
+
+1. Clone each service repo (e.g. `microservices-demo/carts`, `microservices-demo/front-end`, `microservices-demo/user`, etc.), build the Docker image, and push to your registry (or load into Minikube/kind with `eval $(minikube docker-env)` and build there).
+2. Deploy with image overrides: either edit the manifest files to use your image names and tags, or use `kubectl set image` after running `./bin/deploy`, or use Kustomize to override the default `weaveworksdemos/*` images.
