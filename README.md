@@ -10,7 +10,9 @@ You can read more about the [application design](./internal-docs/design.md).
 
 ## Deployment Platforms
 
-The [deploy folder](./deploy/) contains scripts and instructions to provision the application onto your favourite platform. 
+The [deploy folder](./deploy/) contains scripts and instructions to provision the application onto your favourite platform.
+
+**Want to change the application code before deploying?** See [DEVELOP.md](./DEVELOP.md) for kind: clone service repos, build images locally, load into kind, and deploy. 
 
 Please let us know if there is a platform that you would like to see supported.
 

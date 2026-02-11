@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# Clone all Sock Shop service repos so you can edit and build from source.
+# Clones into SERVICES_DIR (default: ../microservices-demo-services).
+#
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SERVICES_DIR="${SERVICES_DIR:-$(dirname "${REPO_ROOT}")/microservices-demo-services}"
+GITHUB_BASE="https://github.com/microservices-demo"
+
+# catalogue-db and user-db repos no longer exist on GitHub; deploy uses pre-built images from Docker Hub
+REPOS="carts catalogue front-end orders payment queue-master shipping user"
+
+echo "Cloning Sock Shop service repos into: ${SERVICES_DIR}"
+mkdir -p "${SERVICES_DIR}"
+cd "${SERVICES_DIR}"
+
+for repo in $REPOS; do
+  if [ -d "${repo}" ]; then
+    echo "  ${repo}/ already exists (pull to update)"
+  else
+    echo "  cloning ${repo}..."
+    git clone "${GITHUB_BASE}/${repo}.git" "${repo}"
+  fi
+done
+
+echo ""
+echo "Done. Edit code in ${SERVICES_DIR}/<service>, then build and deploy."
+echo "See DEVELOP.md for build and deploy steps."
