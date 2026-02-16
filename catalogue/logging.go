@@ -24,16 +24,19 @@ type loggingMiddleware struct {
 
 func (mw loggingMiddleware) List(tags []string, order string, pageNum, pageSize int) (socks []Sock, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "List",
 			"tags", strings.Join(tags, ", "),
 			"order", order,
 			"pageNum", pageNum,
 			"pageSize", pageSize,
 			"result", len(socks),
-			"err", err,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.List(tags, order, pageNum, pageSize)
 }
@@ -53,13 +56,16 @@ func (mw loggingMiddleware) Count(tags []string) (n int, err error) {
 
 func (mw loggingMiddleware) Get(id string) (s Sock, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "Get",
 			"id", id,
 			"sock", s.ID,
-			"err", err,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.Get(id)
 }

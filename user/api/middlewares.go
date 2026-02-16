@@ -28,10 +28,16 @@ type loggingMiddleware struct {
 
 func (mw loggingMiddleware) Login(username, password string) (user users.User, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "Login",
+			"username", username,
+			"user_id", user.UserID,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.Login(username, password)
 }
@@ -67,25 +73,34 @@ func (mw loggingMiddleware) GetUsers(id string) (u []users.User, err error) {
 		if who == "" {
 			who = "all"
 		}
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "GetUsers",
-			"id", who,
+			"user_id", who,
 			"result", len(u),
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.GetUsers(id)
 }
 
-func (mw loggingMiddleware) PostAddress(add users.Address, id string) (string, error) {
+func (mw loggingMiddleware) PostAddress(add users.Address, id string) (addrID string, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "PostAddress",
+			"user_id", id,
+			"result", addrID,
 			"street", add.Street,
 			"number", add.Number,
-			"user", id,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.PostAddress(add, id)
 }
@@ -96,26 +111,35 @@ func (mw loggingMiddleware) GetAddresses(id string) (a []users.Address, err erro
 		if who == "" {
 			who = "all"
 		}
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "GetAddresses",
-			"id", who,
+			"user_id", who,
 			"result", len(a),
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.GetAddresses(id)
 }
 
-func (mw loggingMiddleware) PostCard(card users.Card, id string) (string, error) {
+func (mw loggingMiddleware) PostCard(card users.Card, id string) (cardID string, err error) {
 	defer func(begin time.Time) {
 		cc := card
 		cc.MaskCC()
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "PostCard",
+			"user_id", id,
+			"result", cardID,
 			"card", cc.LongNum,
-			"user", id,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.PostCard(card, id)
 }
@@ -126,24 +150,32 @@ func (mw loggingMiddleware) GetCards(id string) (a []users.Card, err error) {
 		if who == "" {
 			who = "all"
 		}
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "GetCards",
-			"id", who,
+			"user_id", who,
 			"result", len(a),
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.GetCards(id)
 }
 
 func (mw loggingMiddleware) Delete(entity, id string) (err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		lvs := []interface{}{
 			"method", "Delete",
 			"entity", entity,
-			"id", id,
+			"user_id", id,
 			"took", time.Since(begin),
-		)
+		}
+		if err != nil {
+			lvs = append(lvs, "err", err)
+		}
+		mw.logger.Log(lvs...)
 	}(time.Now())
 	return mw.next.Delete(entity, id)
 }

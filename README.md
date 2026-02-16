@@ -30,4 +30,67 @@ Use [Weave Scope](http://weave.works/products/weave-scope/) or [Weave Cloud](htt
 
 ![Sock Shop in Weave Scope](https://github.com/microservices-demo/microservices-demo.github.io/raw/master/assets/sockshop-scope.png)
 
-## 
+## Tokonoma Demo Setup
+
+Demonstrates log investigation using Tokonoma (toko-mcp) against live Sock Shop services.
+
+### Prerequisites
+
+- `docker`, `kind`, `kubectl`, `helm` v3+
+- The [2o](https://github.com/khou/2o) platform repo cloned alongside this repo
+
+### 1. Platform (one-time)
+
+```bash
+cd ../2o/platform
+./bin/setup.sh          # creates kind cluster "qw"
+./bin/deploy.sh         # deploys Quickwit, OTel collector, MCP server
+./bin/port-forward.sh   # waits for readiness, starts port-forwards
+```
+
+### 2. Build and Deploy Sock Shop
+
+```bash
+./bin/build-dev.sh      # builds carts, orders, catalogue; loads into kind
+./bin/run-dev.sh        # deploys sock-shop with dev overlay
+```
+
+### 3. Start Load Test
+
+```bash
+kubectl apply -f deploy/kubernetes/manifests-loadtest/
+```
+
+### 4. Verify Readiness
+
+```bash
+./bin/demo-ready.sh
+```
+
+### 5. Run Demo Scenarios
+
+**Scenario 1 -- Targeted Transaction Trace**
+
+```bash
+./bin/demo-inject-errors.sh scenario1   # prints a user ID to search for
+```
+
+Prompt: "Search the sockshop index for user ID `<user_id>` and find any errors in their transactions"
+
+**Scenario 2 -- Broad Incident Investigation**
+
+```bash
+./bin/demo-inject-errors.sh scenario2   # kills carts-db, wait 30-60s for errors
+```
+
+Prompt: "Users are reporting that adding to cart is failing. Investigate the sockshop logs."
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `bin/build-dev.sh` | Build dev images (carts, orders, catalogue), load into kind |
+| `bin/run-dev.sh` | Deploy Sock Shop with dev overlay |
+| `bin/demo-ready.sh` | Verify cluster is ready for the demo |
+| `bin/demo-inject-errors.sh` | Inject failures for demo scenarios |
+

@@ -47,20 +47,26 @@ public class ItemsController {
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping(consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     public Item addToCart(@PathVariable String customerId, @RequestBody Item item) {
-        // If the item does not exist in the cart, create new one in the repository.
-        FoundItem foundItem = new FoundItem(() -> cartsController.get(customerId).contents(), () -> item);
-        if (!foundItem.hasItem()) {
-            Supplier<Item> newItem = new ItemResource(itemDAO, () -> item).create();
-            LOG.info("action=add_to_cart customer_id={} item_id={} quantity={} unit_price={} status=new_item",
-                    customerId, item.itemId(), item.quantity(), item.getUnitPrice());
-            new CartResource(cartDAO, customerId).contents().get().add(newItem).run();
-            return item;
-        } else {
-            Item newItem = new Item(foundItem.get(), foundItem.get().quantity() + 1);
-            LOG.info("action=add_to_cart customer_id={} item_id={} quantity={} status=incremented",
-                    customerId, newItem.itemId(), newItem.quantity());
-            updateItem(customerId, newItem);
-            return newItem;
+        try {
+            // If the item does not exist in the cart, create new one in the repository.
+            FoundItem foundItem = new FoundItem(() -> cartsController.get(customerId).contents(), () -> item);
+            if (!foundItem.hasItem()) {
+                Supplier<Item> newItem = new ItemResource(itemDAO, () -> item).create();
+                LOG.info("action=add_to_cart customer_id={} item_id={} quantity={} unit_price={} status=new_item",
+                        customerId, item.itemId(), item.quantity(), item.getUnitPrice());
+                new CartResource(cartDAO, customerId).contents().get().add(newItem).run();
+                return item;
+            } else {
+                Item newItem = new Item(foundItem.get(), foundItem.get().quantity() + 1);
+                LOG.info("action=add_to_cart customer_id={} item_id={} quantity={} status=incremented",
+                        customerId, newItem.itemId(), newItem.quantity());
+                updateItem(customerId, newItem);
+                return newItem;
+            }
+        } catch (Exception e) {
+            LOG.error("action=add_to_cart customer_id={} item_id={} status=failed err={}",
+                    customerId, item.itemId(), e.getMessage(), e);
+            throw e;
         }
     }
 
