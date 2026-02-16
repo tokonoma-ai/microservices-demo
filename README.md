@@ -55,11 +55,13 @@ cd ../2o/platform
 ./bin/run-dev.sh        # deploys sock-shop with dev overlay
 ```
 
-### 3. Start Load Test
+### 3. Demo Setup (one command)
 
 ```bash
-kubectl apply -f deploy/kubernetes/manifests-loadtest/
+./bin/demo.sh   # build checkout-injector, deploy load-test + CronJob, trigger first failure
 ```
+
+Background load (load-test) hits front-end. Checkout-fail-injector runs every 15 min and once immediately at startup.
 
 ### 4. Verify Readiness
 
@@ -67,30 +69,20 @@ kubectl apply -f deploy/kubernetes/manifests-loadtest/
 ./bin/demo-ready.sh
 ```
 
-### 5. Run Demo Scenarios
+### 5. Demo Prompt
 
-**Scenario 1 -- Targeted Transaction Trace**
+"Checkout failed for user 57a98d98e4b00679b4a830af. Find the error in the sockshop logs."
 
-```bash
-./bin/demo-inject-errors.sh scenario1   # prints a user ID to search for
-```
-
-Prompt: "Search the sockshop index for user ID `<user_id>` and find any errors in their transactions"
-
-**Scenario 2 -- Broad Incident Investigation**
-
-```bash
-./bin/demo-inject-errors.sh scenario2   # kills carts-db, wait 30-60s for errors
-```
-
-Prompt: "Users are reporting that adding to cart is failing. Investigate the sockshop logs."
+To trigger another failure: `./bin/demo-inject-errors.sh trigger`
 
 ### Scripts
 
 | Script | Purpose |
 |--------|---------|
+| `bin/demo.sh` | One-command demo setup (build + deploy + trigger first failure) |
 | `bin/build-dev.sh` | Build dev images (carts, orders, catalogue), load into kind |
 | `bin/run-dev.sh` | Deploy Sock Shop with dev overlay |
 | `bin/demo-ready.sh` | Verify cluster is ready for the demo |
-| `bin/demo-inject-errors.sh` | Inject failures for demo scenarios |
+| `bin/demo-inject-errors.sh` | Trigger failure now, or scenario2 (carts-db kill) |
+| `load-generator-demo/bin/build` | Build checkout-injector image and load into kind |
 

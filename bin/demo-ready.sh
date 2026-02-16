@@ -64,7 +64,8 @@ done
 echo
 echo "Load test (loadtest namespace):"
 check "Namespace 'loadtest' exists" kubectl get namespace loadtest
-check "load-test pods running" pod_running loadtest "name=load-test"
+check "load-test running" kubectl get pods -n loadtest -l name=load-test -o jsonpath="{.items[0].status.phase}" 2>/dev/null | grep -q Running
+check "checkout-fail-injector CronJob exists" kubectl get cronjob checkout-fail-injector -n loadtest
 
 # Summary
 echo
@@ -78,7 +79,7 @@ else
   echo "Quick reference:"
   echo "  Platform:  cd ../2o/platform && ./bin/setup.sh && ./bin/deploy.sh && ./bin/port-forward.sh"
   echo "  Sock Shop: ./bin/build-dev.sh && ./bin/run-dev.sh"
-  echo "  Load test: kubectl apply -f deploy/kubernetes/manifests-loadtest/"
+  echo "  Demo:      ./bin/demo.sh   (build + deploy + trigger checkout failure)"
   echo "============================================================================="
   exit 1
 fi
