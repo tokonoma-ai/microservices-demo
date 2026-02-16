@@ -73,16 +73,15 @@ Background load (load-test) hits front-end. Checkout-fail-injector runs every 15
 
 "Checkout failed for user 57a98d98e4b00679b4a830af. Find the error in the sockshop logs."
 
-To trigger another failure: `./bin/demo-inject-errors.sh trigger`
+To trigger another failure: `./bin/demo.sh` (or re-run the CronJob manually).
 
 ### Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `bin/demo.sh` | One-command demo setup (build + deploy + trigger first failure) |
+| `bin/demo.sh` | One-command demo setup (build + deploy + trigger failure) |
 | `bin/build-dev.sh` | Build dev images (carts, orders, catalogue), load into kind |
 | `bin/run-dev.sh` | Deploy Sock Shop with dev overlay |
 | `bin/demo-ready.sh` | Verify cluster is ready for the demo |
-| `bin/demo-inject-errors.sh` | Trigger failure now, or scenario2 (carts-db kill) |
 | `load-generator-demo/bin/build` | Build checkout-injector image and load into kind |
 
