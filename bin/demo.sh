@@ -30,4 +30,4 @@ kubectl create job checkout-fail-now --from=cronjob/checkout-fail-injector -n lo
 
 echo
 echo "==> Verify: ./bin/demo-ready.sh"
-echo "==> Demo prompt: \"Checkout failed for user 57a98d98e4b00679b4a830af. Find the error in the sockshop logs.\""
+echo "==> Demo prompt: \"Checkout failed for user 57a98d98e4b00679b4a830af in the last 15 minutes. Find the error in the sockshop logs.\""

@@ -71,7 +71,7 @@ Background load (load-test) hits front-end. Checkout-fail-injector runs every 15
 
 ### 5. Demo Prompt
 
-"Checkout failed for user 57a98d98e4b00679b4a830af. Find the error in the sockshop logs."
+"Checkout failed for user 57a98d98e4b00679b4a830af in the last 15 minutes. Find the error in the sockshop logs."
 
 To trigger another failure: `./bin/demo.sh` (or re-run the CronJob manually).
 
