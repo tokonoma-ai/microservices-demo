@@ -1,6 +1,5 @@
-# Dev overlay: use tag "dev" for all app images (for locally built images).
-# Build images with tag "dev" and deploy with: kubectl apply -k deploy/kubernetes/overlays/dev
-# To use a custom registry, set images[].newName (e.g. myreg.io/myuser/carts).
+# Dev overlay: use tag "dev" only for services with locally built images.
+# Other services use their original tags from the base manifests.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -12,19 +11,5 @@ images:
     newTag: dev
   - name: weaveworksdemos/catalogue:0.3.5
     newTag: dev
-  - name: weaveworksdemos/catalogue-db:0.3.0
-    newTag: dev
-  - name: weaveworksdemos/front-end:0.3.12
-    newTag: dev
   - name: weaveworksdemos/orders:0.4.7
-    newTag: dev
-  - name: weaveworksdemos/payment:0.4.3
-    newTag: dev
-  - name: weaveworksdemos/queue-master:0.3.1
-    newTag: dev
-  - name: weaveworksdemos/shipping:0.4.8
-    newTag: dev
-  - name: weaveworksdemos/user:0.4.7
-    newTag: dev
-  - name: weaveworksdemos/user-db:0.3.0
     newTag: dev

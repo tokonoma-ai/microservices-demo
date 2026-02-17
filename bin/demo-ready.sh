@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Verify that the cluster is ready for the Tokonoma demo.
+# Checks: kind cluster, platform (qw ns), sock-shop services, load test.
+set -euo pipefail
+
+KIND_CLUSTER="${KIND_CLUSTER:-qw}"
+PASS="[OK]"
+FAIL="[FAIL]"
+all_ok=true
+
+check() {
+  local label="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    echo "  ${PASS} ${label}"
+  else
+    echo "  ${FAIL} ${label}"
+    all_ok=false
+  fi
+}
+
+dep_ready() {
+  local ns="$1" name="$2"
+  local ready
+  # Try Deployment first, then StatefulSet
+  ready=$(kubectl get deployment "${name}" -n "${ns}" -o jsonpath='{.status.readyReplicas}' 2>/dev/null)
+  if [[ -z "${ready}" ]]; then
+    ready=$(kubectl get statefulset "${name}" -n "${ns}" -o jsonpath='{.status.readyReplicas}' 2>/dev/null)
+  fi
+  [[ "${ready:-0}" -ge 1 ]]
+}
+
+pod_running() {
+  local ns="$1" label="$2"
+  kubectl get pods -n "${ns}" -l "${label}" -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running
+}
+
+echo "============================================================================="
+echo "Demo Readiness Check"
+echo "============================================================================="
+
+# 1. Kind cluster
+echo
+echo "Kind cluster:"
+check "Cluster '${KIND_CLUSTER}' exists" kind get clusters 2>/dev/null
+
+# 2. Platform (qw namespace)
+echo
+echo "Platform (qw namespace):"
+check "Namespace 'qw' exists" kubectl get namespace qw
+check "Quickwit searcher running" dep_ready qw quickwit-searcher
+check "Quickwit indexer running" dep_ready qw quickwit-indexer
+check "OTel collector running" pod_running qw "app.kubernetes.io/name=opentelemetry-collector"
+
+# 3. Sock Shop
+echo
+echo "Sock Shop (sock-shop namespace):"
+check "Namespace 'sock-shop' exists" kubectl get namespace sock-shop
+for svc in carts catalogue orders front-end payment user shipping; do
+  check "${svc} deployment ready" dep_ready sock-shop "${svc}"
+done
+
+# 4. Load test
+echo
+echo "Load test (loadtest namespace):"
+check "Namespace 'loadtest' exists" kubectl get namespace loadtest
+check "load-test running" kubectl get pods -n loadtest -l name=load-test -o jsonpath="{.items[0].status.phase}" 2>/dev/null | grep -q Running
+check "checkout-fail-injector CronJob exists" kubectl get cronjob checkout-fail-injector -n loadtest
+
+# Summary
+echo
+echo "============================================================================="
+if [[ "${all_ok}" == "true" ]]; then
+  echo "All checks passed. Cluster is ready for the demo."
+  exit 0
+else
+  echo "Some checks failed. Fix the issues above before running the demo."
+  echo
+  echo "Quick reference:"
+  echo "  Platform:  cd ../2o/platform && ./bin/setup.sh && ./bin/deploy.sh && ./bin/port-forward.sh"
+  echo "  Sock Shop: ./bin/build-dev.sh && ./bin/run-dev.sh"
+  echo "  Demo:      ./bin/demo.sh   (build + deploy + trigger checkout failure)"
+  echo "============================================================================="
+  exit 1
+fi

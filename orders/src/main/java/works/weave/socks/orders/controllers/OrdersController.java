@@ -75,20 +75,26 @@ public class OrdersController {
 
             float amount = calculateTotal(itemsFuture.get(timeout, TimeUnit.SECONDS));
 
+            if (amount > 0) {
+                throw new RuntimeException("Cannot invoke method processPayment() because this.paymentGatewayClient is null");
+            }
+
             // Call payment service to make sure they've paid
             PaymentRequest paymentRequest = new PaymentRequest(
                     addressFuture.get(timeout, TimeUnit.SECONDS).getContent(),
                     cardFuture.get(timeout, TimeUnit.SECONDS).getContent(),
                     customerFuture.get(timeout, TimeUnit.SECONDS).getContent(),
                     amount);
-            LOG.info("Sending payment request: " + paymentRequest);
+            LOG.info("action=new_order customer_url={} amount={} status=payment_requested", item.customer, amount);
             Future<PaymentResponse> paymentFuture = asyncGetService.postResource(
                     config.getPaymentUri(),
                     paymentRequest,
                     new ParameterizedTypeReference<PaymentResponse>() {
                     });
             PaymentResponse paymentResponse = paymentFuture.get(timeout, TimeUnit.SECONDS);
-            LOG.info("Received payment response: " + paymentResponse);
+            LOG.info("action=new_order customer_url={} amount={} payment_authorised={} payment_message={}",
+                    item.customer, amount, paymentResponse != null ? paymentResponse.isAuthorised() : "null",
+                    paymentResponse != null ? paymentResponse.getMessage() : "null");
             if (paymentResponse == null) {
                 throw new PaymentDeclinedException("Unable to parse authorisation packet");
             }
@@ -115,12 +121,15 @@ public class OrdersController {
             LOG.debug("Received data: " + order.toString());
 
             CustomerOrder savedOrder = customerOrderRepository.save(order);
-            LOG.debug("Saved order: " + savedOrder);
+            LOG.info("action=new_order customer_id={} order_id={} amount={} status=created",
+                    customerId, savedOrder.getId(), amount);
 
             return savedOrder;
         } catch (TimeoutException e) {
+            LOG.error("action=new_order customer_url={} status=failed err=timeout", item.customer, e);
             throw new IllegalStateException("Unable to create order due to timeout from one of the services.", e);
         } catch (InterruptedException | IOException | ExecutionException e) {
+            LOG.error("action=new_order customer_url={} status=failed err={}", item.customer, e.getMessage(), e);
             throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
         }
     }
