@@ -8,12 +8,9 @@ actively modified.
 
 | Directory | Contents |
 |-----------|----------|
-| `deploy/kubernetes/manifests/` | Base Kustomize manifests (all services + load generator) |
+| `deploy/kubernetes/manifests/` | Base Kustomize manifests (all services) |
 | `deploy/kubernetes/kustomization.yaml` | Kustomize root — patches all 8 app services to `:dev` |
-| `deploy/kubernetes/manifests-loadtest/` | Locust-based load test (separate namespace) |
-| `deploy/kubernetes/manifests-loadtest-demo/` | Checkout-fail-injector CronJob for demo |
 | `carts/`, `catalogue/`, `orders/`, `payment/`, `shipping/`, `queue-master/`, `user/`, `front-end/` | Source code for services built locally |
-| `load-generator-demo/` | Checkout-injector for Tokonoma demo |
 | `bin/` | Build, deploy, and utility scripts |
 
 ## Services and build status
@@ -94,29 +91,17 @@ kind load docker-image weaveworksdemos/front-end:dev --name qw
 kubectl rollout restart deployment/front-end -n sock-shop
 ```
 
-## Load generation
-
-Two load generation systems are available:
-
-1. **Curl-based load generator** (always deployed with the main manifests) —
-   runs in `sock-shop` namespace, generates steady background traffic with
-   realistic user journeys (browse, purchase, cart abandonment). Produces log
-   traffic for Quickwit/observability.
-
-2. **Locust-based load test** (separate, in `loadtest` namespace) —
-   deployed via `./bin/demo.sh`. Includes the checkout-fail-injector CronJob
-   for the Tokonoma demo scenario.
-
 ## Tokonoma demo setup
 
-After deploying sock-shop:
+After deploying sock-shop, deploy load generators and trigger the demo from the
+[load-generators](https://github.com/tokonoma-ai/load-generators) repo:
 
 ```bash
+cd ../load-generators
 ./bin/demo.sh
 ```
 
-This builds the checkout-injector, deploys the locust load test and CronJob,
-and triggers the first checkout failure. Verify with `./bin/demo-ready.sh`.
+Verify with `./bin/demo-ready.sh` (from this repo).
 
 ## Utility scripts
 
@@ -125,13 +110,12 @@ and triggers the first checkout failure. Verify with `./bin/demo-ready.sh`.
 | `bin/deploy.sh` | Deploy sock-shop |
 | `bin/build-dev.sh` | Build all 8 dev services and load into kind |
 | `bin/port-forward.sh` | Port-forward frontend (:8080) |
-| `bin/demo.sh` | Full Tokonoma demo setup |
 | `bin/demo-ready.sh` | Verify demo readiness |
 
 ## Cluster layout
 
 | Namespace | Contents | Managed by |
 |-----------|----------|------------|
-| `sock-shop` | All Sock Shop services + curl load generator | This repo (`bin/deploy.sh`) |
-| `loadtest` | Locust load test + checkout-fail-injector | This repo (`bin/demo.sh`) |
+| `sock-shop` | All Sock Shop services | This repo (`bin/deploy.sh`) |
+| `loadtest` | Load generators + checkout-fail-injector | [load-generators](https://github.com/tokonoma-ai/load-generators) repo |
 | `qw` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |

@@ -21,7 +21,7 @@ kubectl apply -k "${KUSTOMIZE_ROOT}"
 
 echo ""
 echo "Waiting for deployments to roll out..."
-for dep in carts catalogue orders front-end payment user shipping queue-master load-generator; do
+for dep in carts catalogue orders front-end payment user shipping queue-master; do
   echo "  Waiting for ${dep}..."
   kubectl rollout status deployment/"${dep}" -n "${NAMESPACE}" --timeout=180s 2>/dev/null || \
     echo "  WARNING: ${dep} did not become ready within 180s"

@@ -23,9 +23,10 @@ cd ../2o/platform
 ./bin/deploy.sh            # deploys sock-shop
 ```
 
-### 3. Demo Setup (one command)
+### 3. Demo Setup (load generators)
 
 ```bash
+cd ../load-generators
 ./bin/demo.sh   # build checkout-injector, deploy load-test + CronJob, trigger first failure
 ```
 
@@ -41,17 +42,15 @@ Background load (load-test) hits front-end. Checkout-fail-injector runs every 15
 
 "Checkout failed for user 57a98d98e4b00679b4a830af in the last 15 minutes. Find the error in the sockshop logs."
 
-To trigger another failure: `./bin/demo.sh` (or re-run the CronJob manually).
+To trigger another failure: `cd ../load-generators && ./bin/demo.sh` (or re-run the CronJob manually).
 
 ### Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `bin/demo.sh` | One-command demo setup (build + deploy + trigger failure) |
-| `bin/build-dev.sh` | Build dev images (carts, orders, catalogue), load into kind |
+| `bin/build-dev.sh` | Build dev images (carts, orders, catalogue, etc.), load into kind |
 | `bin/deploy.sh` | Deploy Sock Shop |
 | `bin/demo-ready.sh` | Verify cluster is ready for the demo |
-| `load-generator-demo/bin/build` | Build checkout-injector image and load into kind |
 
 # Sock Shop : A Microservice Demo Application
 
@@ -60,10 +59,6 @@ The application is the user-facing part of an online shop that sells socks. It i
 It is built using [Spring Boot](http://projects.spring.io/spring-boot/), [Go kit](http://gokit.io) and [Node.js](https://nodejs.org/) and is packaged in Docker containers.
 
 You can read more about the [application design](./internal-docs/design.md).
-
-## Deployment Platforms
-
-The [deploy folder](./deploy/) contains scripts and instructions to provision the application onto your favourite platform.
 
 **Want to change the application code before deploying?** See [DEVELOP.md](./DEVELOP.md) for kind: build images locally, load into kind, and deploy. 
 
