@@ -5,12 +5,11 @@ This repo’s instructions target a **kind** cluster. From the repository root:
 ## Deploy (Kustomize)
 
 ```bash
-./bin/deploy              # official images (overlay: default)
-./bin/deploy dev           # your locally built images, tag "dev" (build + kind load docker-image first)
+./bin/build-dev.sh   # build all services, load into kind
+./bin/deploy.sh      # deploy with locally-built :dev images
 ```
 
-- **default** overlay: applies `deploy/kubernetes/manifests`; images from Docker Hub (`weaveworksdemos/*`).
-- **dev** overlay: same but all app images use tag `dev`. Build images locally and load into kind (see [DEVELOP.md](../../DEVELOP.md)); nothing is pushed to Docker Hub.
+All 8 app services use locally-built `:dev` images. Build with `build-dev.sh` first, then deploy. See [DEVELOP.md](../../DEVELOP.md) for details.
 
 ## Carts and MongoDB version
 
@@ -52,4 +51,4 @@ The application services (carts, catalogue, front-end, orders, payment, queue-ma
 To build and deploy using your own images:
 
 1. Clone each service repo (e.g. `microservices-demo/carts`, `microservices-demo/front-end`, `microservices-demo/user`, etc.), build the Docker image, and push to your registry (or load into Minikube/kind with `eval $(minikube docker-env)` and build there).
-2. Deploy with image overrides: either edit the manifest files to use your image names and tags, or use `kubectl set image` after running `./bin/deploy`, or use Kustomize to override the default `weaveworksdemos/*` images.
+2. Deploy with image overrides: either edit the manifest files to use your image names and tags, or use `kubectl set image` after running `./bin/deploy.sh`, or use Kustomize to override the default `weaveworksdemos/*` images.

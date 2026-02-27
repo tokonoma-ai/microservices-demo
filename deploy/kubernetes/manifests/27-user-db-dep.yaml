@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: user-db
-        image: weaveworksdemos/user-db:0.3.0
+        image: mongo:8.0.19
 
         ports:
         - name: mongo
@@ -31,13 +31,20 @@ spec:
               - CHOWN
               - SETGID
               - SETUID
-          readOnlyRootFilesystem: true
         volumeMounts:
         - mountPath: /tmp
           name: tmp-volume
+        - mountPath: /data/db
+          name: data-volume
+        - mountPath: /data/configdb
+          name: config-volume
       volumes:
         - name: tmp-volume
           emptyDir:
             medium: Memory
+        - name: data-volume
+          emptyDir: {}
+        - name: config-volume
+          emptyDir: {}
       nodeSelector:
         beta.kubernetes.io/os: linux

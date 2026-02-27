@@ -4,8 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-kit/kit/log"
-	"golang.org/x/net/context"
+	"github.com/go-kit/log"
 
 	stdopentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,19 +17,36 @@ var (
 		Help:    "Time (in seconds) spent serving HTTP requests.",
 		Buckets: prometheus.DefBuckets,
 	}, []string{"method", "path", "status_code", "isWS"})
+	HTTPInflightRequests = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "http_requests_inflight",
+		Help: "Current number of inflight HTTP requests.",
+	}, []string{"method", "path"})
+	HTTPRequestBodySize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "http_request_body_size_bytes",
+		Help:    "Size of HTTP request bodies.",
+		Buckets: prometheus.ExponentialBuckets(128, 2, 10),
+	}, []string{"method", "path"})
+	HTTPResponseBodySize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "http_response_body_size_bytes",
+		Help:    "Size of HTTP response bodies.",
+		Buckets: prometheus.ExponentialBuckets(128, 2, 10),
+	}, []string{"method", "path"})
 )
 
 func init() {
 	prometheus.MustRegister(HTTPLatency)
+	prometheus.MustRegister(HTTPInflightRequests)
+	prometheus.MustRegister(HTTPRequestBodySize)
+	prometheus.MustRegister(HTTPResponseBodySize)
 }
 
-func WireUp(ctx context.Context, declineAmount float32, tracer stdopentracing.Tracer, serviceName string) (http.Handler, log.Logger) {
+func WireUp(declineAmount float32, tracer stdopentracing.Tracer, serviceName string) (http.Handler, log.Logger) {
 	// Log domain.
 	var logger log.Logger
 	{
 		logger = log.NewLogfmtLogger(os.Stderr)
-		logger = log.NewContext(logger).With("ts", log.DefaultTimestampUTC)
-		logger = log.NewContext(logger).With("caller", log.DefaultCaller)
+		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
 	// Service domain.
@@ -43,12 +59,15 @@ func WireUp(ctx context.Context, declineAmount float32, tracer stdopentracing.Tr
 	// Endpoint domain.
 	endpoints := MakeEndpoints(service, tracer)
 
-	router := MakeHTTPHandler(ctx, endpoints, logger, tracer)
+	router := MakeHTTPHandler(endpoints, logger, tracer)
 
 	httpMiddleware := []middleware.Interface{
 		middleware.Instrument{
-			Duration:     HTTPLatency,
-			RouteMatcher: router,
+			Duration:         HTTPLatency,
+			InflightRequests: HTTPInflightRequests,
+			RequestBodySize:  HTTPRequestBodySize,
+			ResponseBodySize: HTTPResponseBodySize,
+			RouteMatcher:     router,
 		},
 	}
 

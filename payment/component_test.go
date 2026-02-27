@@ -3,20 +3,16 @@ package payment
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/opentracing/opentracing-go"
-	"golang.org/x/net/context"
 )
 
 func TestComponent(t *testing.T) {
-	// Mechanical stuff.
-	ctx := context.Background()
-
-	handler, logger := WireUp(ctx, float32(99.99), opentracing.GlobalTracer(), "test")
+	handler, logger := WireUp(float32(99.99), opentracing.GlobalTracer(), "test")
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
@@ -32,7 +28,7 @@ func TestComponent(t *testing.T) {
 	if err != nil {
 		t.Fatal("ERROR", err)
 	}
-	greeting, err := ioutil.ReadAll(res.Body)
+	greeting, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		t.Fatal("ERROR", err)
@@ -47,5 +43,4 @@ func TestComponent(t *testing.T) {
 		t.Errorf("Authorise returned unexpected result: got %v expected %v",
 			response.Authorised, expected)
 	}
-
 }

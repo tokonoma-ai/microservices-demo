@@ -9,72 +9,58 @@ actively modified.
 | Directory | Contents |
 |-----------|----------|
 | `deploy/kubernetes/manifests/` | Base Kustomize manifests (all services + load generator) |
-| `deploy/kubernetes/overlays/default/` | Overlay using stock Docker Hub images |
-| `deploy/kubernetes/overlays/dev/` | Overlay that patches 6 services to `:dev` |
+| `deploy/kubernetes/kustomization.yaml` | Kustomize root — patches all 8 app services to `:dev` |
 | `deploy/kubernetes/manifests-loadtest/` | Locust-based load test (separate namespace) |
 | `deploy/kubernetes/manifests-loadtest-demo/` | Checkout-fail-injector CronJob for demo |
-| `carts/`, `catalogue/`, `orders/`, `shipping/`, `queue-master/`, `front-end/` | Source code for services built locally |
-| `payment/`, `user/` | Source code (not currently buildable — needs Go modernization) |
+| `carts/`, `catalogue/`, `orders/`, `payment/`, `shipping/`, `queue-master/`, `user/`, `front-end/` | Source code for services built locally |
 | `load-generator-demo/` | Checkout-injector for Tokonoma demo |
 | `bin/` | Build, deploy, and utility scripts |
 
 ## Services and build status
 
-6 of 8 app services are built from source. The remaining 2 use stock Docker Hub images.
+All 8 app services are built from source.
 
 | Service | Image when stock | Built locally? | Notes |
 |---------|-----------------|---------------|-------|
 | **carts** | `weaveworksdemos/carts:0.4.8` | Yes → `:dev` | Java 17 |
 | **orders** | `weaveworksdemos/orders:0.4.7` | Yes → `:dev` | Java 17 |
 | **catalogue** | `weaveworksdemos/catalogue:0.3.5` | Yes → `:dev` | Go 1.24 |
+| **payment** | `weaveworksdemos/payment:0.4.3` | Yes → `:dev` | Go 1.24 |
 | **front-end** | `weaveworksdemos/front-end:0.3.12` | Yes → `:dev` | Node.js 20 |
 | **shipping** | `weaveworksdemos/shipping:0.4.8` | Yes → `:dev` | Java 17 |
 | **queue-master** | `weaveworksdemos/queue-master:0.3.1` | Yes → `:dev` | Java 17 |
-| payment | `weaveworksdemos/payment:0.4.3` | No | Go 1.7 + gvt — needs modernization |
-| user | `weaveworksdemos/user:0.4.7` | No | Go 1.7 + glide — needs modernization |
+| **user** | `weaveworksdemos/user:0.4.7` | Yes → `:dev` | Go 1.24 |
 
 Databases, RabbitMQ, Redis all use stock images and have no source code here.
 
-## Deploy (no build needed)
+## Build and deploy
 
-Deploy all services using stock Docker Hub images:
-
-```bash
-./bin/deploy
-```
-
-This applies the default Kustomize overlay, which includes all services plus the
-curl-based load generator in the `sock-shop` namespace.
-
-## Build and deploy from source
-
-### 1. Build all dev services and load into kind
+### 1. Build all services and load into kind
 
 ```bash
 ./bin/build-dev.sh
 ```
 
-This builds all 6 services and loads the `:dev` images into the kind cluster:
+This builds all 8 services and loads the `:dev` images into the kind cluster:
 - **carts** (Java 17, Maven)
 - **orders** (Java 17, Maven)
 - **shipping** (Java 17, Maven)
 - **queue-master** (Java 17, Maven)
 - **catalogue** (Go 1.24, multi-stage Docker)
+- **payment** (Go 1.24, multi-stage Docker)
+- **user** (Go 1.24, multi-stage Docker)
 - **front-end** (Node.js 20, Docker)
 
-### 2. Deploy with dev overlay
+### 2. Deploy
 
 ```bash
-./bin/deploy dev
+./bin/deploy.sh
 ```
-
-This applies the dev Kustomize overlay which patches all 6 services
-to use the `:dev` tag. Payment and user remain on stock images.
 
 ### 3. Or do both steps: build then deploy
 
 ```bash
-./bin/build-dev.sh && ./bin/deploy dev
+./bin/build-dev.sh && ./bin/deploy.sh
 ```
 
 ## Building a single service
@@ -92,9 +78,9 @@ kubectl rollout restart deployment/carts -n sock-shop
 
 Use `maven:3-eclipse-temurin-17` for all Java services (carts, orders, shipping, queue-master).
 
-**Go service (catalogue):**
+**Go services (catalogue, payment, user):**
 ```bash
-cd catalogue
+cd catalogue  # or payment, user
 docker build -t weaveworksdemos/catalogue:dev -f docker/catalogue/Dockerfile .
 kind load docker-image weaveworksdemos/catalogue:dev --name qw
 kubectl rollout restart deployment/catalogue -n sock-shop
@@ -136,10 +122,9 @@ and triggers the first checkout failure. Verify with `./bin/demo-ready.sh`.
 
 | Script | Purpose |
 |--------|---------|
-| `bin/deploy` | Deploy sock-shop (default or dev overlay) |
-| `bin/build-dev.sh` | Build all 6 dev services and load into kind |
-| `bin/run-dev.sh` | Deploy dev overlay only (no build) |
-| `bin/port-forward` | Port-forward frontend (:8080) and Grafana (:3001) |
+| `bin/deploy.sh` | Deploy sock-shop |
+| `bin/build-dev.sh` | Build all 8 dev services and load into kind |
+| `bin/port-forward.sh` | Port-forward frontend (:8080) |
 | `bin/demo.sh` | Full Tokonoma demo setup |
 | `bin/demo-ready.sh` | Verify demo readiness |
 
@@ -147,6 +132,6 @@ and triggers the first checkout failure. Verify with `./bin/demo-ready.sh`.
 
 | Namespace | Contents | Managed by |
 |-----------|----------|------------|
-| `sock-shop` | All Sock Shop services + curl load generator | This repo (`bin/deploy`) |
+| `sock-shop` | All Sock Shop services + curl load generator | This repo (`bin/deploy.sh`) |
 | `loadtest` | Locust load test + checkout-fail-injector | This repo (`bin/demo.sh`) |
 | `qw` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |

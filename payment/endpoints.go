@@ -1,10 +1,11 @@
 package payment
 
 import (
+	"context"
+
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/tracing/opentracing"
 	stdopentracing "github.com/opentracing/opentracing-go"
-	"golang.org/x/net/context"
 )
 
 // Endpoints collects the endpoints that comprise the Service.
@@ -22,7 +23,7 @@ func MakeEndpoints(s Service, tracer stdopentracing.Tracer) Endpoints {
 	}
 }
 
-// MakeListEndpoint returns an endpoint via the given service.
+// MakeAuthoriseEndpoint returns an endpoint via the given service.
 func MakeAuthoriseEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var span stdopentracing.Span
@@ -47,13 +48,10 @@ func MakeHealthEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
-// AuthoriseRequest represents a request for payment authorisation.
-// The Amount is the total amount of the transaction
 type AuthoriseRequest struct {
 	Amount float32 `json:"amount"`
 }
 
-// AuthoriseResponse returns a response of type Authorisation and an error, Err.
 type AuthoriseResponse struct {
 	Authorisation Authorisation
 	Err           error
