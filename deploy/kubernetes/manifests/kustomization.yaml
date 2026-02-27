@@ -32,3 +32,4 @@ resources:
   - 26-user-svc.yaml
   - 27-user-db-dep.yaml
   - 28-user-db-svc.yaml
+  - 29-load-generator-dep.yaml

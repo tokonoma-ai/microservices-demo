@@ -35,6 +35,14 @@ echo "Applying with Kustomize (kubectl apply -k ${OVERLAY_PATH})..."
 kubectl apply -k "${OVERLAY_PATH}"
 
 echo ""
+echo "Waiting for deployments to roll out..."
+for dep in carts catalogue orders front-end payment user shipping queue-master load-generator; do
+  echo "  Waiting for ${dep}..."
+  kubectl rollout status deployment/"${dep}" -n "${NAMESPACE}" --timeout=180s 2>/dev/null || \
+    echo "  WARNING: ${dep} did not become ready within 180s"
+done
+
+echo ""
 echo "Deployment complete."
 echo ""
 echo "Current status:"
@@ -42,5 +50,5 @@ kubectl get pods -n "${NAMESPACE}"
 echo ""
 echo "To access the front-end:"
 echo "  NodePort: http://<node-ip>:30001"
-echo "  Or: kubectl port-forward -n ${NAMESPACE} svc/front-end 8079:80"
-echo "  Then open http://localhost:8079"
+echo "  Or: ./bin/port-forward"
+echo "  Then open http://localhost:8080"

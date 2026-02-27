@@ -1,115 +1,152 @@
-# Developing and Deploying Sock Shop from Source
+# Developing and Deploying Sock Shop
 
-This guide covers how to **change application code** and then build and deploy to a **kind** cluster (local only).
+This repo is the single source of truth for deploying Sock Shop to a **kind** cluster.
+It contains both the Kubernetes manifests and the source code for services that are
+actively modified.
 
-## Where the code lives
+## What's in this repo
 
-| What | Where | Used in deploy? |
-|------|--------|------------------|
-| **Deployment config** (K8s manifests) | This repo (`deploy/kubernetes/manifests/`) | Yes |
-| **openapi**, **healthcheck**, **graphs** | This repo (`openapi/`, `healthcheck/`, `graphs/`) | Not in main sock-shop manifests (CI/test) |
-| **Main app services** (carts, catalogue, front-end, orders, payment, queue-master, shipping, user, catalogue-db, user-db) | **Separate GitHub repos** | Yes — these are the containers the deploy runs |
+| Directory | Contents |
+|-----------|----------|
+| `deploy/kubernetes/manifests/` | Base Kustomize manifests (all services + load generator) |
+| `deploy/kubernetes/overlays/default/` | Overlay using stock Docker Hub images |
+| `deploy/kubernetes/overlays/dev/` | Overlay that patches 6 services to `:dev` |
+| `deploy/kubernetes/manifests-loadtest/` | Locust-based load test (separate namespace) |
+| `deploy/kubernetes/manifests-loadtest-demo/` | Checkout-fail-injector CronJob for demo |
+| `carts/`, `catalogue/`, `orders/`, `shipping/`, `queue-master/`, `front-end/` | Source code for services built locally |
+| `payment/`, `user/` | Source code (not currently buildable — needs Go modernization) |
+| `load-generator-demo/` | Checkout-injector for Tokonoma demo |
+| `bin/` | Build, deploy, and utility scripts |
 
-So to change the **shop UI, cart, orders, users, catalogue, payment, shipping**, etc., you need the source from the individual service repos.
+## Services and build status
 
----
+6 of 8 app services are built from source. The remaining 2 use stock Docker Hub images.
 
-## Next steps: make changes and deploy
+| Service | Image when stock | Built locally? | Notes |
+|---------|-----------------|---------------|-------|
+| **carts** | `weaveworksdemos/carts:0.4.8` | Yes → `:dev` | Java 17 |
+| **orders** | `weaveworksdemos/orders:0.4.7` | Yes → `:dev` | Java 17 |
+| **catalogue** | `weaveworksdemos/catalogue:0.3.5` | Yes → `:dev` | Go 1.24 |
+| **front-end** | `weaveworksdemos/front-end:0.3.12` | Yes → `:dev` | Node.js 20 |
+| **shipping** | `weaveworksdemos/shipping:0.4.8` | Yes → `:dev` | Java 17 |
+| **queue-master** | `weaveworksdemos/queue-master:0.3.1` | Yes → `:dev` | Java 17 |
+| payment | `weaveworksdemos/payment:0.4.3` | No | Go 1.7 + gvt — needs modernization |
+| user | `weaveworksdemos/user:0.4.7` | No | Go 1.7 + glide — needs modernization |
 
-### 1. Get the service source code
+Databases, RabbitMQ, Redis all use stock images and have no source code here.
 
-Clone the repos you want to edit. You can put them next to this repo (e.g. `../carts`, `../front-end`) or in a single folder:
+## Deploy (no build needed)
 
-```bash
-# From this repo root
-./bin/clone-services
-```
+Deploy all services using stock Docker Hub images:
 
-That script clones all service repos into `../microservices-demo-services/` (or set `SERVICES_DIR`). Or clone by hand:
-
-| Service      | Repo |
-|-------------|------|
-| carts       | https://github.com/microservices-demo/carts |
-| catalogue   | https://github.com/microservices-demo/catalogue |
-| front-end   | https://github.com/microservices-demo/front-end |
-| orders      | https://github.com/microservices-demo/orders |
-| payment     | https://github.com/microservices-demo/payment |
-| queue-master| https://github.com/microservices-demo/queue-master |
-| shipping    | https://github.com/microservices-demo/shipping |
-| user        | https://github.com/microservices-demo/user |
-
-**catalogue-db and user-db:** There are no separate repos (or they were removed). You don’t need them—the deploy uses the pre-built images from Docker Hub (`weaveworksdemos/catalogue-db`, `weaveworksdemos/user-db`). Only the app services in the table need to be cloned when changing code.
-
-### 2. Make your code changes
-
-Edit the service(s) you care about in their respective repos. Each repo has its own Dockerfile and build (Java, Go, Node, etc.).
-
-### 3. Build and load images (kind)
-
-Use tag `dev` and the same image name as the dev overlay (`weaveworksdemos/<service>:dev`). **`docker build -t ...` only creates a local image—it does not upload or push to Docker Hub** (or any registry). For kind you then load that local image into the cluster with `kind load docker-image`.
-
-```bash
-export IMAGE_TAG=dev
-export IMAGE_PREFIX=weaveworksdemos  
-```
-
-From each service repo you changed:
-
-**Java services (carts, orders, payment, shipping, queue-master):** build the JAR first, then Docker:
-
-```bash
-cd /path/to/carts   # or orders, payment, shipping, queue-master
-mvn -DskipTests package
-docker build -t ${IMAGE_PREFIX}/carts:${IMAGE_TAG} .
-kind load docker-image ${IMAGE_PREFIX}/carts:${IMAGE_TAG}
-```
-
-**One-liner (carts, from this repo root; kind cluster name `qw`):**
-```bash
-cd carts && mvn -DskipTests package && docker build -t weaveworksdemos/carts:dev . && kind load docker-image weaveworksdemos/carts:dev --name qw && kubectl rollout restart deployment/carts -n sock-shop
-```
-Use `--name <cluster>` if your kind cluster has a different name.
-
-**Go/Node services (catalogue, front-end, user):** no compile step; just Docker:
-
-```bash
-cd /path/to/front-end
-docker build -t ${IMAGE_PREFIX}/front-end:${IMAGE_TAG} .
-kind load docker-image ${IMAGE_PREFIX}/front-end:${IMAGE_TAG}
-```
-**One-liner (catalogue, from this repo root; kind cluster name `qw`):**
-```bash
-cd catalogue && docker build -t weaveworksdemos/catalogue:dev -f docker/catalogue/Dockerfile . && kind load docker-image weaveworksdemos/catalogue:dev --name qw && kubectl rollout restart deployment/catalogue -n sock-shop
-```
-Repeat for every service you modified (and optionally for all services so versions match).
-
-### 5. Deploy (Kustomize)
-
-**Official images (no build):**
 ```bash
 ./bin/deploy
 ```
 
-**Your built images (after building and `kind load docker-image`):**
+This applies the default Kustomize overlay, which includes all services plus the
+curl-based load generator in the `sock-shop` namespace.
+
+## Build and deploy from source
+
+### 1. Build all dev services and load into kind
+
+```bash
+./bin/build-dev.sh
+```
+
+This builds all 6 services and loads the `:dev` images into the kind cluster:
+- **carts** (Java 17, Maven)
+- **orders** (Java 17, Maven)
+- **shipping** (Java 17, Maven)
+- **queue-master** (Java 17, Maven)
+- **catalogue** (Go 1.24, multi-stage Docker)
+- **front-end** (Node.js 20, Docker)
+
+### 2. Deploy with dev overlay
+
 ```bash
 ./bin/deploy dev
 ```
 
-### 6. Verify
+This applies the dev Kustomize overlay which patches all 6 services
+to use the `:dev` tag. Payment and user remain on stock images.
+
+### 3. Or do both steps: build then deploy
 
 ```bash
-kubectl get pods -n sock-shop
-# Open front-end (NodePort 30001 or port-forward)
-kubectl port-forward -n sock-shop svc/front-end 8079:80
-# Then open http://localhost:8079
+./bin/build-dev.sh && ./bin/deploy dev
 ```
 
----
+## Building a single service
 
-## Summary workflow (kind)
+From the repo root:
 
-1. **Clone** service repos → `./bin/clone-services` or clone by hand.
-2. **Edit** code in the repo(s) you care about.
-3. **Build** images: `docker build -t weaveworksdemos/<service>:dev .` (local only; no push). Then **load into kind:** `kind load docker-image weaveworksdemos/<service>:dev`.
-4. **Deploy:** `./bin/deploy` (official images) or `./bin/deploy dev` (your images).
+**Java services (carts, orders, shipping, queue-master):**
+```bash
+cd carts  # or orders, shipping, queue-master
+docker run --rm -v "$(pwd)":/build -w /build maven:3-eclipse-temurin-17 mvn package -DskipTests -q
+docker build -t weaveworksdemos/carts:dev .
+kind load docker-image weaveworksdemos/carts:dev --name qw
+kubectl rollout restart deployment/carts -n sock-shop
+```
 
+Use `maven:3-eclipse-temurin-17` for all Java services (carts, orders, shipping, queue-master).
+
+**Go service (catalogue):**
+```bash
+cd catalogue
+docker build -t weaveworksdemos/catalogue:dev -f docker/catalogue/Dockerfile .
+kind load docker-image weaveworksdemos/catalogue:dev --name qw
+kubectl rollout restart deployment/catalogue -n sock-shop
+```
+
+**Node.js service (front-end):**
+```bash
+cd front-end
+docker build -t weaveworksdemos/front-end:dev .
+kind load docker-image weaveworksdemos/front-end:dev --name qw
+kubectl rollout restart deployment/front-end -n sock-shop
+```
+
+## Load generation
+
+Two load generation systems are available:
+
+1. **Curl-based load generator** (always deployed with the main manifests) —
+   runs in `sock-shop` namespace, generates steady background traffic with
+   realistic user journeys (browse, purchase, cart abandonment). Produces log
+   traffic for Quickwit/observability.
+
+2. **Locust-based load test** (separate, in `loadtest` namespace) —
+   deployed via `./bin/demo.sh`. Includes the checkout-fail-injector CronJob
+   for the Tokonoma demo scenario.
+
+## Tokonoma demo setup
+
+After deploying sock-shop:
+
+```bash
+./bin/demo.sh
+```
+
+This builds the checkout-injector, deploys the locust load test and CronJob,
+and triggers the first checkout failure. Verify with `./bin/demo-ready.sh`.
+
+## Utility scripts
+
+| Script | Purpose |
+|--------|---------|
+| `bin/deploy` | Deploy sock-shop (default or dev overlay) |
+| `bin/build-dev.sh` | Build all 6 dev services and load into kind |
+| `bin/run-dev.sh` | Deploy dev overlay only (no build) |
+| `bin/port-forward` | Port-forward frontend (:8080) and Grafana (:3001) |
+| `bin/demo.sh` | Full Tokonoma demo setup |
+| `bin/demo-ready.sh` | Verify demo readiness |
+
+## Cluster layout
+
+| Namespace | Contents | Managed by |
+|-----------|----------|------------|
+| `sock-shop` | All Sock Shop services + curl load generator | This repo (`bin/deploy`) |
+| `loadtest` | Locust load test + checkout-fail-injector | This repo (`bin/demo.sh`) |
+| `qw` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |

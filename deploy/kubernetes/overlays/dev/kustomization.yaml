@@ -13,3 +13,9 @@ images:
     newTag: dev
   - name: weaveworksdemos/orders:0.4.7
     newTag: dev
+  - name: weaveworksdemos/front-end:0.3.12
+    newTag: dev
+  - name: weaveworksdemos/shipping:0.4.8
+    newTag: dev
+  - name: weaveworksdemos/queue-master:0.3.1
+    newTag: dev

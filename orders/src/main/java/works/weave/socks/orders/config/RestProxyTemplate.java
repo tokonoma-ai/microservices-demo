@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.context.annotation.Bean;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import java.net.InetSocketAddress;
@@ -17,12 +15,7 @@ import java.net.Proxy;
 public final class RestProxyTemplate {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired RestTemplate restTemplate;
-
-    @Bean
-    public RestTemplate restTemplate() {
-      return new RestTemplate();
-    }
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${proxy.host:}")
     private String host;

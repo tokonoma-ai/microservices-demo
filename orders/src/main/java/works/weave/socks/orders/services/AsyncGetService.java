@@ -6,16 +6,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.Resource;
-import org.springframework.hateoas.Resources;
-import org.springframework.hateoas.hal.Jackson2HalModule;
-import org.springframework.hateoas.mvc.TypeReferences;
+import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import works.weave.socks.orders.config.RestProxyTemplate;
@@ -25,6 +22,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import static org.springframework.hateoas.MediaTypes.HAL_JSON;
@@ -52,23 +50,13 @@ public class AsyncGetService {
     }
 
     @Async
-    public <T> Future<Resource<T>> getResource(URI url, TypeReferences.ResourceType<T> type) throws
+    public <T> Future<EntityModel<T>> getResource(URI url, ParameterizedTypeReference<EntityModel<T>> type) throws
             InterruptedException, IOException {
         RequestEntity<Void> request = RequestEntity.get(url).accept(HAL_JSON).build();
         LOG.debug("Requesting: " + request.toString());
-        Resource<T> body = restProxyTemplate.getRestTemplate().exchange(request, type).getBody();
+        EntityModel<T> body = restProxyTemplate.getRestTemplate().exchange(request, type).getBody();
         LOG.debug("Received: " + body.toString());
-        return new AsyncResult<>(body);
-    }
-
-    @Async
-    public <T> Future<Resources<T>> getDataList(URI url, TypeReferences.ResourcesType<T> type) throws
-            InterruptedException, IOException {
-        RequestEntity<Void> request = RequestEntity.get(url).accept(HAL_JSON).build();
-        LOG.debug("Requesting: " + request.toString());
-        Resources<T> body = restProxyTemplate.getRestTemplate().exchange(request, type).getBody();
-        LOG.debug("Received: " + body.toString());
-        return new AsyncResult<>(body);
+        return CompletableFuture.completedFuture(body);
     }
 
     @Async
@@ -78,7 +66,7 @@ public class AsyncGetService {
         LOG.debug("Requesting: " + request.toString());
         List<T> body = restProxyTemplate.getRestTemplate().exchange(request, type).getBody();
         LOG.debug("Received: " + body.toString());
-        return new AsyncResult<>(body);
+        return CompletableFuture.completedFuture(body);
     }
 
     @Async
@@ -88,6 +76,6 @@ public class AsyncGetService {
         LOG.debug("Requesting: " + request.toString());
         T responseBody = restProxyTemplate.getRestTemplate().exchange(request, returnType).getBody();
         LOG.debug("Received: " + responseBody);
-        return new AsyncResult<>(responseBody);
+        return CompletableFuture.completedFuture(responseBody);
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import works.weave.socks.queuemaster.entities.HealthCheck;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
 import java.util.Calendar;

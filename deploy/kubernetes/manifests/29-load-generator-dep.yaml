@@ -1,0 +1,226 @@
+# Load generator Deployment for Sock Shop
+# Simulates realistic user journeys: browse, login, add to cart, checkout
+# Generates steady log traffic for observability (Quickwit, etc.)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: sock-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              BASE="http://front-end.sock-shop.svc.cluster.local"
+
+              # Product IDs from catalogue
+              PRODUCTS="
+              3395a43e-2d88-40de-b95f-e00e1502085b
+              510a0d7e-8e83-4193-b483-e27e09ddc34d
+              808a2de1-1aaa-4c25-a9b9-6612e8f29a38
+              819e1fbf-8b7e-4f6d-811f-693534916a8b
+              837ab141-399e-4c1f-9abc-bace40296bac
+              a0a4f044-b040-410d-8ead-4de0446aec7e
+              d3588630-ad8e-49df-bbd7-3167f7efb246
+              zzz4f044-b040-410d-8ead-4de0446aec7e
+              "
+
+              USER_COUNT=0
+
+              log() {
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+              }
+
+              # Browse catalogue
+              browse() {
+                log "ACTION=browse"
+                curl -s "$BASE/" > /dev/null
+                curl -s "$BASE/catalogue" > /dev/null
+                curl -s "$BASE/catalogue?size=5" > /dev/null
+                curl -s "$BASE/category.html?tags=sport" > /dev/null
+
+                # View random product detail
+                PROD=$(echo "$PRODUCTS" | tr -s ' \n' '\n' | grep -v '^$' | shuf -n1)
+                curl -s "$BASE/detail.html?id=$PROD" > /dev/null
+                log "ACTION=view_product product_id=$PROD"
+              }
+
+              # Register new user
+              register() {
+                USER_COUNT=$((USER_COUNT + 1))
+                USERNAME="testuser${USER_COUNT}_$(date +%s)"
+                PASSWORD="password123"
+                EMAIL="${USERNAME}@test.com"
+
+                log "ACTION=register username=$USERNAME"
+                curl -s -X POST "$BASE/register" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"email\":\"$EMAIL\",\"firstName\":\"Test\",\"lastName\":\"User\"}" > /dev/null
+
+                echo "$USERNAME:$PASSWORD"
+              }
+
+              # Login
+              login() {
+                CREDS="$1"
+                USER=$(echo "$CREDS" | cut -d: -f1)
+                PASS=$(echo "$CREDS" | cut -d: -f2)
+
+                log "ACTION=login username=$USER"
+                COOKIE=$(curl -s -c - -X GET "$BASE/login" -u "$USER:$PASS" 2>/dev/null | grep logged_in | awk '{print $NF}')
+                echo "$COOKIE"
+              }
+
+              # Add item to cart
+              add_to_cart() {
+                COOKIE="$1"
+                PROD=$(echo "$PRODUCTS" | tr -s ' \n' '\n' | grep -v '^$' | shuf -n1)
+
+                log "ACTION=add_to_cart product_id=$PROD"
+                curl -s -X POST "$BASE/cart" \
+                  -H "Content-Type: application/json" \
+                  -b "logged_in=$COOKIE" \
+                  -d "{\"id\":\"$PROD\"}" > /dev/null
+              }
+
+              # View cart
+              view_cart() {
+                COOKIE="$1"
+                log "ACTION=view_cart"
+                curl -s "$BASE/cart" -b "logged_in=$COOKIE" > /dev/null
+                curl -s "$BASE/basket.html" -b "logged_in=$COOKIE" > /dev/null
+              }
+
+              # Checkout
+              checkout() {
+                COOKIE="$1"
+                log "ACTION=checkout"
+                curl -s -X POST "$BASE/orders" \
+                  -b "logged_in=$COOKIE" > /dev/null
+              }
+
+              # Delete item from cart
+              delete_from_cart() {
+                COOKIE="$1"
+                log "ACTION=delete_from_cart"
+                curl -s -X DELETE "$BASE/cart" \
+                  -b "logged_in=$COOKIE" > /dev/null
+              }
+
+              # View orders
+              view_orders() {
+                COOKIE="$1"
+                log "ACTION=view_orders"
+                curl -s "$BASE/orders" -b "logged_in=$COOKIE" > /dev/null
+                curl -s "$BASE/customer-orders.html" -b "logged_in=$COOKIE" > /dev/null
+              }
+
+              # Full user journey
+              full_journey() {
+                log "JOURNEY=full_purchase starting"
+
+                # Register and login
+                CREDS=$(register)
+                sleep 1
+                COOKIE=$(login "$CREDS")
+                sleep 1
+
+                # Browse
+                browse
+                sleep 1
+
+                # Add 2-3 items to cart
+                ITEMS=$((RANDOM % 2 + 2))
+                for i in $(seq 1 $ITEMS); do
+                  add_to_cart "$COOKIE"
+                  sleep 1
+                done
+
+                # View cart
+                view_cart "$COOKIE"
+                sleep 1
+
+                # Checkout
+                checkout "$COOKIE"
+                sleep 1
+
+                # View orders
+                view_orders "$COOKIE"
+
+                log "JOURNEY=full_purchase completed"
+              }
+
+              # Browse only journey
+              browse_journey() {
+                log "JOURNEY=browse_only starting"
+                browse
+                sleep 1
+                browse
+                log "JOURNEY=browse_only completed"
+              }
+
+              # Cart abandonment journey
+              abandon_cart_journey() {
+                log "JOURNEY=cart_abandonment starting"
+
+                CREDS=$(register)
+                sleep 1
+                COOKIE=$(login "$CREDS")
+                sleep 1
+
+                browse
+                sleep 1
+
+                add_to_cart "$COOKIE"
+                sleep 1
+                add_to_cart "$COOKIE"
+                sleep 1
+
+                view_cart "$COOKIE"
+                # No checkout - abandoned
+
+                log "JOURNEY=cart_abandonment completed"
+              }
+
+              log "Load generator started"
+
+              while true; do
+                # Pick random journey
+                JOURNEY=$((RANDOM % 10))
+
+                if [ $JOURNEY -lt 4 ]; then
+                  # 40% - just browsing
+                  browse_journey
+                elif [ $JOURNEY -lt 7 ]; then
+                  # 30% - full purchase
+                  full_journey
+                else
+                  # 30% - cart abandonment
+                  abandon_cart_journey
+                fi
+
+                # Wait between journeys
+                WAIT=$((RANDOM % 5 + 3))
+                log "Waiting ${WAIT}s before next journey"
+                sleep $WAIT
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
