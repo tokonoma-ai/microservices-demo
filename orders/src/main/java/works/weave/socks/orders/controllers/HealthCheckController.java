@@ -1,5 +1,6 @@
 package works.weave.socks.orders.controllers;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ public class HealthCheckController {
       HealthCheck database = new HealthCheck("orders-db", "OK", dateNow);
 
       try {
-         mongoTemplate.executeCommand("{ buildInfo: 1 }");
+         mongoTemplate.executeCommand(new Document("buildInfo", 1));
       } catch (Exception e) {
          database.setStatus("err");
       }
