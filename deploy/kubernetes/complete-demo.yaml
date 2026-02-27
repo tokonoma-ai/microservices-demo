@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
       - name: carts-db
-        image: mongo
+        image: mongo:8.0.19
         ports:
         - name: mongo
           containerPort: 27017
@@ -221,7 +221,7 @@ spec:
     spec:
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.0
+        image: weaveworksdemos/catalogue-db:0.3.5
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -405,7 +405,7 @@ spec:
     spec:
       containers:
       - name: orders-db
-        image: mongo
+        image: mongo:8.0.19
         ports:
         - name: mongo
           containerPort: 27017

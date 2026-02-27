@@ -70,6 +70,22 @@ docker build -t weaveworksdemos/catalogue:dev \
   -f "${REPO_ROOT}/catalogue/docker/catalogue/Dockerfile" \
   "${REPO_ROOT}/catalogue"
 
+### Payment (Go 1.24, multi-stage) #############################################
+
+echo
+echo "==> Building payment Docker image (multi-stage)..."
+docker build -t weaveworksdemos/payment:dev \
+  -f "${REPO_ROOT}/payment/docker/payment/Dockerfile" \
+  "${REPO_ROOT}/payment"
+
+### User (Go 1.24, multi-stage) ################################################
+
+echo
+echo "==> Building user Docker image (multi-stage)..."
+docker build -t weaveworksdemos/user:dev \
+  -f "${REPO_ROOT}/user/docker/user/Dockerfile" \
+  "${REPO_ROOT}/user"
+
 ### Front-end (Node.js 20) #####################################################
 
 echo
@@ -85,10 +101,12 @@ kind load docker-image weaveworksdemos/orders:dev        --name "${KIND_CLUSTER}
 kind load docker-image weaveworksdemos/shipping:dev      --name "${KIND_CLUSTER}"
 kind load docker-image weaveworksdemos/queue-master:dev  --name "${KIND_CLUSTER}"
 kind load docker-image weaveworksdemos/catalogue:dev     --name "${KIND_CLUSTER}"
+kind load docker-image weaveworksdemos/payment:dev       --name "${KIND_CLUSTER}"
+kind load docker-image weaveworksdemos/user:dev          --name "${KIND_CLUSTER}"
 kind load docker-image weaveworksdemos/front-end:dev     --name "${KIND_CLUSTER}"
 
 echo
 echo "============================================================================="
 echo "Build complete. Images loaded into kind cluster '${KIND_CLUSTER}'."
-echo "Run ./bin/deploy dev to deploy."
+echo "Run ./bin/deploy.sh to deploy."
 echo "============================================================================="

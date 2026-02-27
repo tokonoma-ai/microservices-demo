@@ -1,10 +1,9 @@
-# Dev overlay: use tag "dev" only for services with locally built images.
-# Other services use their original tags from the base manifests.
+# Kustomize root: applies base manifests with locally-built :dev images.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../manifests
+  - manifests
 
 images:
   - name: weaveworksdemos/carts:0.4.8
@@ -18,4 +17,8 @@ images:
   - name: weaveworksdemos/shipping:0.4.8
     newTag: dev
   - name: weaveworksdemos/queue-master:0.3.1
+    newTag: dev
+  - name: weaveworksdemos/payment:0.4.3
+    newTag: dev
+  - name: weaveworksdemos/user:0.4.7
     newTag: dev

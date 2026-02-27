@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 	"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -39,61 +39,61 @@ func MakeHTTPHandler(e Endpoints, logger log.Logger, tracer stdopentracing.Trace
 		e.LoginEndpoint,
 		decodeLoginRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /login", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /login", logger)))...,
 	))
 	r.Methods("POST").Path("/register").Handler(httptransport.NewServer(
 		e.RegisterEndpoint,
 		decodeRegisterRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /register", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "POST /register", logger)))...,
 	))
 	r.Methods("GET").PathPrefix("/customers").Handler(httptransport.NewServer(
 		e.UserGetEndpoint,
 		decodeGetRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /customers", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /customers", logger)))...,
 	))
 	r.Methods("GET").PathPrefix("/cards").Handler(httptransport.NewServer(
 		e.CardGetEndpoint,
 		decodeGetRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /cards", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /cards", logger)))...,
 	))
 	r.Methods("GET").PathPrefix("/addresses").Handler(httptransport.NewServer(
 		e.AddressGetEndpoint,
 		decodeGetRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /addresses", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /addresses", logger)))...,
 	))
 	r.Methods("POST").Path("/customers").Handler(httptransport.NewServer(
 		e.UserPostEndpoint,
 		decodeUserRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /customers", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "POST /customers", logger)))...,
 	))
 	r.Methods("POST").Path("/addresses").Handler(httptransport.NewServer(
 		e.AddressPostEndpoint,
 		decodeAddressRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /addresses", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "POST /addresses", logger)))...,
 	))
 	r.Methods("POST").Path("/cards").Handler(httptransport.NewServer(
 		e.CardPostEndpoint,
 		decodeCardRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /cards", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "POST /cards", logger)))...,
 	))
 	r.Methods("DELETE").PathPrefix("/").Handler(httptransport.NewServer(
 		e.DeleteEndpoint,
 		decodeDeleteRequest,
 		encodeResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "DELETE /", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "DELETE /", logger)))...,
 	))
 	r.Methods("GET").PathPrefix("/health").Handler(httptransport.NewServer(
 		e.HealthEndpoint,
 		decodeHealthRequest,
 		encodeHealthResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /health", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /health", logger)))...,
 	))
 	r.Handle("/metrics", promhttp.Handler())
 	return r
@@ -105,8 +105,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case ErrUnauthorized:
 		code = http.StatusUnauthorized
 	}
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/hal+json")
+	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":       err.Error(),
 		"status_code": code,

@@ -1,25 +1,25 @@
 package payment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
 	stdopentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-        "github.com/streadway/handy/breaker"
-	"golang.org/x/net/context"
+	"github.com/sony/gobreaker"
 )
 
 // MakeHTTPHandler mounts the endpoints into a REST-y HTTP handler.
-func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer stdopentracing.Tracer) *mux.Router {
+func MakeHTTPHandler(e Endpoints, logger log.Logger, tracer stdopentracing.Tracer) *mux.Router {
 	r := mux.NewRouter().StrictSlash(false)
 	options := []httptransport.ServerOption{
 		httptransport.ServerErrorLogger(logger),
@@ -27,18 +27,16 @@ func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer
 	}
 
 	r.Methods("POST").Path("/paymentAuth").Handler(httptransport.NewServer(
-		ctx,
-		circuitbreaker.HandyBreaker(breaker.NewBreaker(0.2))(e.AuthoriseEndpoint),
+		circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(e.AuthoriseEndpoint),
 		decodeAuthoriseRequest,
 		encodeAuthoriseResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /paymentAuth", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "POST /paymentAuth", logger)))...,
 	))
 	r.Methods("GET").Path("/health").Handler(httptransport.NewServer(
-		ctx,
-		circuitbreaker.HandyBreaker(breaker.NewBreaker(0.2))(e.HealthEndpoint),
+		circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(e.HealthEndpoint),
 		decodeHealthRequest,
 		encodeHealthResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /health", logger)))...,
+		append(options, httptransport.ServerBefore(opentracing.HTTPToContext(tracer, "GET /health", logger)))...,
 	))
 	r.Handle("/metrics", promhttp.Handler())
 	return r
@@ -46,8 +44,8 @@ func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	code := http.StatusInternalServerError
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":       err.Error(),
 		"status_code": code,
@@ -56,25 +54,21 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 }
 
 func decodeAuthoriseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	// Read the content
 	var bodyBytes []byte
 	if r.Body != nil {
 		var err error
-		bodyBytes, err = ioutil.ReadAll(r.Body)
+		bodyBytes, err = io.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
 		}
 	}
-	// Save the content
 	bodyString := string(bodyBytes)
 
-	// Decode auth request
 	var request AuthoriseRequest
 	if err := json.Unmarshal(bodyBytes, &request); err != nil {
 		return nil, err
 	}
 
-	// If amount isn't present, error
 	if request.Amount == 0.0 {
 		return nil, &UnmarshalKeyError{
 			Key:  "amount",
@@ -113,7 +107,6 @@ func encodeHealthResponse(ctx context.Context, w http.ResponseWriter, response i
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	// All of our response objects are JSON serializable, so we just do that.
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)
 }
