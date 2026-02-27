@@ -79,7 +79,7 @@ else
   echo "Quick reference:"
   echo "  Platform:  cd ../2o/platform && ./bin/setup.sh && ./bin/deploy.sh && ./bin/port-forward.sh"
   echo "  Sock Shop: ./bin/build-dev.sh && ./bin/deploy.sh"
-  echo "  Demo:      ./bin/demo.sh   (build + deploy + trigger checkout failure)"
+  echo "  Demo:      cd ../load-generators && ./bin/demo.sh"
   echo "============================================================================="
   exit 1
 fi
