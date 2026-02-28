@@ -33,9 +33,25 @@ insert_address({
 insert_address({
     "_id": ObjectId("57a98ddce4b00679b4a830d1"),
     "number": "3",
-    "street": "my road",
+    "street": "Rochester Ave",
     "city": "London",
     "country": "UK"
+});
+insert_address({
+    "_id": ObjectId("57a98d98e4b00679b4a830c0"),
+    "number": "12",
+    "street": "Princes Street",
+    "city": "Edinburgh",
+    "postcode": "EH2 2AN",
+    "country": "United Kingdom"
+});
+insert_address({
+    "_id": ObjectId("57a98d98e4b00679b4a830c3"),
+    "number": "87",
+    "street": "Deansgate",
+    "city": "Manchester",
+    "postcode": "M3 2BW",
+    "country": "United Kingdom"
 });
 
 print("________ADDRESS DATA_______");

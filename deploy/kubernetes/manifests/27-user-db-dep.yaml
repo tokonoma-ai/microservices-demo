@@ -16,6 +16,27 @@ spec:
       labels:
         name: user-db
     spec:
+      initContainers:
+      - name: seed
+        image: mongo:8.0.19
+        command:
+        - bash
+        - -c
+        - |
+          mongod --fork --logpath /var/log/mongod.log --dbpath /data/db
+          for f in /docker-entrypoint-initdb.d/*-create.js; do
+            mongosh localhost:27017/users "$f"
+          done
+          for f in /docker-entrypoint-initdb.d/*-insert.js; do
+            mongosh localhost:27017/users "$f"
+          done
+          mongod --dbpath /data/db --shutdown
+          chown -R 999:999 /data/db
+        volumeMounts:
+        - mountPath: /data/db
+          name: data-volume
+        - mountPath: /docker-entrypoint-initdb.d
+          name: seed-scripts
       containers:
       - name: user-db
         image: mongo:8.0.19
@@ -31,6 +52,7 @@ spec:
               - CHOWN
               - SETGID
               - SETUID
+              - DAC_OVERRIDE
         volumeMounts:
         - mountPath: /tmp
           name: tmp-volume
@@ -46,5 +68,8 @@ spec:
           emptyDir: {}
         - name: config-volume
           emptyDir: {}
+        - name: seed-scripts
+          configMap:
+            name: user-db-seed
       nodeSelector:
         beta.kubernetes.io/os: linux

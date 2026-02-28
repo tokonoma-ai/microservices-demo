@@ -19,9 +19,9 @@ insert_customer({
 //pass eve
 insert_customer({
     "_id": ObjectId("57a98d98e4b00679b4a830b2"),
-    "firstName": "User",
-    "lastName": "Name",
-    "username": "user",
+    "firstName": "James",
+    "lastName": "Cooper",
+    "username": "james_cooper",
     "password": "e2de7202bb2201842d041f6de201b10438369fb8",
     "salt": "6c1c6176e8b455ef37da13d953df971c249d0d8e",
     "addresses": [ObjectId("57a98d98e4b00679b4a830b0")],
@@ -30,13 +30,35 @@ insert_customer({
 //pass password
 insert_customer({
     "_id": ObjectId("57a98d98e4b00679b4a830b5"),
-    "firstName": "User1",
-    "lastName": "Name1",
-    "username": "user1",
+    "firstName": "Sarah",
+    "lastName": "Mitchell",
+    "username": "sarah_mitchell",
     "password": "8f31df4dcc25694aeb0c212118ae37bbd6e47bcd",
     "salt": "bd832b0e10c6882deabc5e8e60a37689e2b708c2",
     "addresses": [ObjectId("57a98d98e4b00679b4a830b3")],
     "cards": [ObjectId("57a98d98e4b00679b4a830b4")]
+});
+//pass passsord
+insert_customer({
+    "_id": ObjectId("57a98d98e4b00679b4a830c2"),
+    "firstName": "Marcus",
+    "lastName": "Chen",
+    "username": "marcus_chen",
+    "password": "e2de7202bb2201842d041f6de201b10438369fb8",
+    "salt": "6c1c6176e8b455ef37da13d953df971c249d0d8e",
+    "addresses": [ObjectId("57a98d98e4b00679b4a830c0")],
+    "cards": [ObjectId("57a98d98e4b00679b4a830c1")]
+});
+//pass password
+insert_customer({
+    "_id": ObjectId("57a98d98e4b00679b4a830c5"),
+    "firstName": "Priya",
+    "lastName": "Patel",
+    "username": "priya_patel",
+    "password": "8f31df4dcc25694aeb0c212118ae37bbd6e47bcd",
+    "salt": "bd832b0e10c6882deabc5e8e60a37689e2b708c2",
+    "addresses": [ObjectId("57a98d98e4b00679b4a830c3")],
+    "cards": [ObjectId("57a98d98e4b00679b4a830c4")]
 });
 //pass passsord
 print("_______CUSTOMER DATA_______");

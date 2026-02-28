@@ -31,6 +31,8 @@ spec:
         env:
         - name: mongo
           value: user-db:27017
+        - name: HATEAOS
+          value: user
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001

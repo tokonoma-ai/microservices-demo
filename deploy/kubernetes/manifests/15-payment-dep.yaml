@@ -19,6 +19,7 @@ spec:
       containers:
       - name: payment
         image: weaveworksdemos/payment:0.4.3
+        command: ["/app", "-port=80", "-decline=1000"]
         resources:
           limits:
             cpu: 200m
