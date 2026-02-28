@@ -39,6 +39,16 @@ INSERT INTO sock VALUES ("zzz4f044-b040-410d-8ead-4de0446aec7e", "Classic", "Kee
 INSERT INTO sock VALUES ("3395a43e-2d88-40de-b95f-e00e1502085b", "Colourful", "proident occaecat irure et excepteur labore minim nisi amet irure",  18, 438, "/catalogue/images/colourful_socks.jpg", "/catalogue/images/colourful_socks.jpg");
 INSERT INTO sock VALUES ("837ab141-399e-4c1f-9abc-bace40296bac", "Cat socks", "consequat amet cupidatat minim laborum tempor elit ex consequat in",  15, 175, "/catalogue/images/catsocks.jpg", "/catalogue/images/catsocks2.jpg");
 
+-- MALFORMED PRODUCTS FOR TROUBLESHOOTING DEMOS --
+-- Ghost Sock: Has no tags, so it won't appear in catalogue listings (due to JOIN query)
+-- but can be accessed directly via /catalogue/{id}
+INSERT INTO sock VALUES ("bad00001-0000-0000-0000-000000000001", "Ghost", "This sock exists but has no tags. It won't appear in catalogue searches due to the JOIN query, but can be added to cart via direct link. A classic 'invisible product' bug.", 25.00, 100, "/catalogue/images/classic.jpg", "/catalogue/images/classic2.jpg");
+
+-- Cursed Sock: Has negative price, which can cause checkout to fail with invalid payment amount
+-- when combined with low-value items (total can drop below $0)
+INSERT INTO sock VALUES ("bad00002-0000-0000-0000-000000000002", "Cursed", "This sock has a negative price due to a data entry error. When added to cart with other items, it can cause the order total to become negative, triggering payment validation failures.", -5.00, 50, "/catalogue/images/holy_1.jpeg", "/catalogue/images/holy_2.jpeg");
+INSERT INTO sock_tag VALUES ("bad00002-0000-0000-0000-000000000002", "10");
+
 INSERT INTO tag (name) VALUES ("brown");
 INSERT INTO tag (name) VALUES ("geek");
 INSERT INTO tag (name) VALUES ("formal");
