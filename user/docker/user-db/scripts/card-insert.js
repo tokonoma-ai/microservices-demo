@@ -30,6 +30,18 @@ insert_card({
     "expires": "04/16",
     "ccv": "432"
 });
+insert_card({
+    "_id": ObjectId("57a98d98e4b00679b4a830c1"),
+    "longNum": "4716839210583347",
+    "expires": "11/26",
+    "ccv": "514"
+});
+insert_card({
+    "_id": ObjectId("57a98d98e4b00679b4a830c4"),
+    "longNum": "3892501748206195",
+    "expires": "03/27",
+    "ccv": "209"
+});
 
 print("________CARD DATA_______");
 db.cards.find().forEach(get_results);

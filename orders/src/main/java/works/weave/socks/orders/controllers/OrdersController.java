@@ -74,10 +74,6 @@ public class OrdersController {
 
             float amount = calculateTotal(itemsFuture.get(timeout, TimeUnit.SECONDS));
 
-            if (amount > 0) {
-                throw new RuntimeException("Cannot invoke method processPayment() because this.paymentGatewayClient is null");
-            }
-
             // Call payment service to make sure they've paid
             PaymentRequest paymentRequest = new PaymentRequest(
                     addressFuture.get(timeout, TimeUnit.SECONDS).getContent(),

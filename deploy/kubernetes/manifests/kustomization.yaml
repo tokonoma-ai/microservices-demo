@@ -31,4 +31,5 @@ resources:
   - 25-user-dep.yaml
   - 26-user-svc.yaml
   - 27-user-db-dep.yaml
+  - 27a-user-db-seed-cm.yaml
   - 28-user-db-svc.yaml
