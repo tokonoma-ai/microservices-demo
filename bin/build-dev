@@ -108,5 +108,5 @@ kind load docker-image weaveworksdemos/front-end:dev     --name "${KIND_CLUSTER}
 echo
 echo "============================================================================="
 echo "Build complete. Images loaded into kind cluster '${KIND_CLUSTER}'."
-echo "Run ./bin/deploy.sh to deploy."
+echo "Run ./bin/deploy to deploy."
 echo "============================================================================="

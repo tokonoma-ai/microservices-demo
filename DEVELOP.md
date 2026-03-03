@@ -35,7 +35,7 @@ Databases, RabbitMQ, Redis all use stock images and have no source code here.
 ### 1. Build all services and load into kind
 
 ```bash
-./bin/build-dev.sh
+./bin/build-dev
 ```
 
 This builds all 8 services and loads the `:dev` images into the kind cluster:
@@ -51,13 +51,13 @@ This builds all 8 services and loads the `:dev` images into the kind cluster:
 ### 2. Deploy
 
 ```bash
-./bin/deploy.sh
+./bin/deploy
 ```
 
 ### 3. Or do both steps: build then deploy
 
 ```bash
-./bin/build-dev.sh && ./bin/deploy.sh
+./bin/build-dev && ./bin/deploy
 ```
 
 ## Building a single service
@@ -98,24 +98,24 @@ After deploying sock-shop, deploy load generators and trigger the demo from the
 
 ```bash
 cd ../load-generators
-./bin/demo.sh
+./bin/demo
 ```
 
-Verify with `./bin/demo-ready.sh` (from this repo).
+Verify with `./bin/demo-ready` (from this repo).
 
 ## Utility scripts
 
 | Script | Purpose |
 |--------|---------|
-| `bin/deploy.sh` | Deploy sock-shop |
-| `bin/build-dev.sh` | Build all 8 dev services and load into kind |
-| `bin/port-forward.sh` | Port-forward frontend (:8080) |
-| `bin/demo-ready.sh` | Verify demo readiness |
+| `bin/deploy` | Deploy sock-shop |
+| `bin/build-dev` | Build all 8 dev services and load into kind |
+| `bin/port-forward` | Port-forward frontend (:8080) |
+| `bin/demo-ready` | Verify demo readiness |
 
 ## Cluster layout
 
 | Namespace | Contents | Managed by |
 |-----------|----------|------------|
-| `sock-shop` | All Sock Shop services | This repo (`bin/deploy.sh`) |
+| `sock-shop` | All Sock Shop services | This repo (`bin/deploy`) |
 | `loadtest` | Load generators + checkout-fail-injector | [load-generators](https://github.com/tokonoma-ai/load-generators) repo |
 | `qw` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |

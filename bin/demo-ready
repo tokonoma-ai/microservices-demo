@@ -77,9 +77,9 @@ else
   echo "Some checks failed. Fix the issues above before running the demo."
   echo
   echo "Quick reference:"
-  echo "  Platform:  cd ../2o/platform && ./bin/setup.sh && ./bin/deploy.sh && ./bin/port-forward.sh"
-  echo "  Sock Shop: ./bin/build-dev.sh && ./bin/deploy.sh"
-  echo "  Demo:      cd ../load-generators && ./bin/demo.sh"
+  echo "  Platform:  cd ../2o/platform && ./bin/setup && ./bin/deploy && ./bin/port-forward"
+  echo "  Sock Shop: ./bin/build-dev && ./bin/deploy"
+  echo "  Demo:      cd ../load-generators && ./bin/demo"
   echo "============================================================================="
   exit 1
 fi

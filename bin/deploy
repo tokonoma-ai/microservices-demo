@@ -4,7 +4,7 @@
 # All app services use locally-built :dev images.
 #
 # Usage:
-#   ./bin/deploy.sh
+#   ./bin/deploy
 #
 set -e
 
@@ -35,5 +35,5 @@ kubectl get pods -n "${NAMESPACE}"
 echo ""
 echo "To access the front-end:"
 echo "  NodePort: http://<node-ip>:30001"
-echo "  Or: ./bin/port-forward.sh"
+echo "  Or: ./bin/port-forward"
 echo "  Then open http://localhost:8080"
