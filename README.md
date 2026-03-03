@@ -11,23 +11,23 @@ Demonstrates log investigation using Tokonoma (toko-mcp) against live Sock Shop 
 
 ```bash
 cd ../2o/platform
-./bin/setup.sh          # creates kind cluster "qw"
-./bin/deploy.sh         # deploys Quickwit, OTel collector, MCP server
-./bin/port-forward.sh   # waits for readiness, starts port-forwards
+./bin/setup          # creates kind cluster "qw"
+./bin/deploy         # deploys Quickwit, OTel collector, MCP server
+./bin/port-forward   # waits for readiness, starts port-forwards
 ```
 
 ### 2. Build and Deploy Sock Shop
 
 ```bash
-./bin/build-dev.sh      # builds carts, orders, catalogue, etc., loads into kind
-./bin/deploy.sh            # deploys sock-shop
+./bin/build-dev      # builds carts, orders, catalogue, etc., loads into kind
+./bin/deploy            # deploys sock-shop
 ```
 
 ### 3. Demo Setup (load generators)
 
 ```bash
 cd ../load-generators
-./bin/demo.sh   # build checkout-injector, deploy load-test + CronJob, trigger first failure
+./bin/demo   # build checkout-injector, deploy load-test + CronJob, trigger first failure
 ```
 
 Background load (load-test) hits front-end. Checkout-fail-injector runs every 15 min and once immediately at startup.
@@ -35,22 +35,22 @@ Background load (load-test) hits front-end. Checkout-fail-injector runs every 15
 ### 4. Verify Readiness
 
 ```bash
-./bin/demo-ready.sh
+./bin/demo-ready
 ```
 
 ### 5. Demo Prompt
 
 "Checkout failed for user 57a98d98e4b00679b4a830af in the last 15 minutes. Find the error in the sockshop logs."
 
-To trigger another failure: `cd ../load-generators && ./bin/demo.sh` (or re-run the CronJob manually).
+To trigger another failure: `cd ../load-generators && ./bin/demo` (or re-run the CronJob manually).
 
 ### Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `bin/build-dev.sh` | Build dev images (carts, orders, catalogue, etc.), load into kind |
-| `bin/deploy.sh` | Deploy Sock Shop |
-| `bin/demo-ready.sh` | Verify cluster is ready for the demo |
+| `bin/build-dev` | Build dev images (carts, orders, catalogue, etc.), load into kind |
+| `bin/deploy` | Deploy Sock Shop |
+| `bin/demo-ready` | Verify cluster is ready for the demo |
 
 # Sock Shop : A Microservice Demo Application
 
