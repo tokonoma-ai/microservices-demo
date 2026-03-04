@@ -1,41 +1,37 @@
-[![Build Status](https://travis-ci.org/microservices-demo/carts.svg?branch=master)](https://travis-ci.org/microservices-demo/carts) [![Coverage Status](https://coveralls.io/repos/github/microservices-demo/carts/badge.svg?branch=master)](https://coveralls.io/github/microservices-demo/carts?branch=master)
-[![](https://images.microbadger.com/badges/image/weaveworksdemos/cart.svg)](http://microbadger.com/images/weaveworksdemos/cart "Get your own image badge on microbadger.com")
+# Carts
 
-# DEPRECATED: cart
 A microservices-demo service that provides shopping carts for users.
 
-This build is built, tested and released by travis.
+**Stack:** Java 17, Spring Boot 2.7.18, MongoDB
 
-# API Spec
+## Build
 
-Checkout the API Spec [here](http://microservices-demo.github.io/api/index?url=https://raw.githubusercontent.com/microservices-demo/carts/master/api-spec/cart.json)
+```bash
+# Build from repo root
+./bin/build --kind   # or --eks
 
-# Build
+# Or build locally with Maven
+mvn -DskipTests package
+```
 
-## Java
+## Run
 
-`mvn -DskipTests package`
+```bash
+mvn spring-boot:run
+```
 
-## Docker
+## Check
 
-`GROUP=weaveworksdemos COMMIT=test ./scripts/build.sh`
+```bash
+curl http://localhost:8081/health
+```
 
-# Test
+## Use
 
-`./test/test.sh < python testing file >`. For example: `./test/test.sh unit.py`
+```bash
+curl http://localhost:8081
+```
 
-# Run
+## API Spec
 
-`mvn spring-boot:run`
-
-# Check
-
-`curl http://localhost:8081/health`
-
-# Use
-
-`curl http://localhost:8081`
-
-# Push
-
-`GROUP=weaveworksdemos COMMIT=test ./scripts/push.sh`
+See the API Spec [here](http://microservices-demo.github.io/api/index?url=https://raw.githubusercontent.com/microservices-demo/carts/master/api-spec/cart.json).
