@@ -1,7 +1,7 @@
-.PHONY: gen-complete-demo
-gen-complete-demo:
-	make -C deploy/kubernetes docker-gen-complete-demo
+.PHONY: render-kind
+render-kind:
+	make -C deploy/kubernetes render-kind
 
-.PHONY: check-generated-files
-check-generated-files:
-	make -C deploy/kubernetes docker-check-complete-demo
+.PHONY: render-eks
+render-eks:
+	make -C deploy/kubernetes render-eks

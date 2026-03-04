@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.5
+        image: mysql:8.0
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -27,5 +27,12 @@ spec:
         ports:
         - name: mysql
           containerPort: 3306
+        volumeMounts:
+        - mountPath: /docker-entrypoint-initdb.d
+          name: seed-scripts
+      volumes:
+        - name: seed-scripts
+          configMap:
+            name: catalogue-db-seed
       nodeSelector:
         beta.kubernetes.io/os: linux

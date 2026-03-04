@@ -11,6 +11,7 @@ resources:
   - 05-catalogue-dep.yaml
   - 06-catalogue-svc.yaml
   - 07-catalogue-db-dep.yaml
+  - 07a-catalogue-db-seed-cm.yaml
   - 08-catalogue-db-svc.yaml
   - 09-front-end-dep.yaml
   - 10-front-end-svc.yaml
