@@ -1,4 +1,4 @@
-# Montoring
+# Monitoring
 
 First create the monitoring namespace using the `00-monitoring-ns.yaml` file:
 

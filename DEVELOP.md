@@ -119,7 +119,7 @@ Images:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `KIND_CLUSTER` | `qw` | kind cluster name |
+| `KIND_CLUSTER` | `tokonoma` | kind cluster name |
 
 **EKS:**
 
@@ -175,7 +175,7 @@ rebuilt it.
 docker run --rm -v "$PWD/orders":/build -w /build \
   maven:3-eclipse-temurin-17 mvn package -DskipTests -q
 docker build -t weaveworksdemos/orders:dev-$(git rev-parse --short=7 HEAD) orders/
-kind load docker-image weaveworksdemos/orders:dev-$(git rev-parse --short=7 HEAD) --name qw
+kind load docker-image weaveworksdemos/orders:dev-$(git rev-parse --short=7 HEAD) --name tokonoma
 kubectl rollout restart deployment/orders -n sock-shop
 ```
 
@@ -196,7 +196,7 @@ kubectl rollout restart deployment/orders -n sock-shop
 ```bash
 SHA=$(git rev-parse --short=7 HEAD)
 docker build -t weaveworksdemos/catalogue:dev-$SHA -f catalogue/docker/catalogue/Dockerfile catalogue/
-kind load docker-image weaveworksdemos/catalogue:dev-$SHA --name qw
+kind load docker-image weaveworksdemos/catalogue:dev-$SHA --name tokonoma
 kubectl rollout restart deployment/catalogue -n sock-shop
 ```
 
@@ -205,7 +205,7 @@ kubectl rollout restart deployment/catalogue -n sock-shop
 ```bash
 SHA=$(git rev-parse --short=7 HEAD)
 docker build -t weaveworksdemos/front-end:dev-$SHA front-end/
-kind load docker-image weaveworksdemos/front-end:dev-$SHA --name qw
+kind load docker-image weaveworksdemos/front-end:dev-$SHA --name tokonoma
 kubectl rollout restart deployment/front-end -n sock-shop
 ```
 
@@ -242,5 +242,5 @@ directly — all deployments go through an overlay.
 | Namespace | Contents | Managed by |
 |-----------|----------|------------|
 | `sock-shop` | All Sock Shop services | This repo (`bin/deploy`) |
-| `loadtest` | Load generators + checkout-fail-injector | [load-generators](https://github.com/tokonoma-ai/load-generators) repo |
-| `qw` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |
+| `loadgen` | Load generators | [load-generators](https://github.com/tokonoma-ai/load-generators) repo |
+| `platform` | Quickwit, Prometheus, Grafana, OTel, MCP server | Platform scripts (separate) |

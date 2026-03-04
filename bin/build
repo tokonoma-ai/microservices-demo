@@ -26,6 +26,7 @@ for arg in "$@"; do
   case "$arg" in
     --kind)  TARGET="kind" ;;
     --eks)   TARGET="eks" ;;
+    --gke)   echo "Error: --gke is not yet implemented"; exit 1 ;;
     --force) FORCE=true ;;
     *)       echo "Unknown argument: $arg"; echo "Usage: $0 --kind|--eks [--force]"; exit 1 ;;
   esac
@@ -57,7 +58,7 @@ if [ "$TARGET" = "eks" ]; then
   PLATFORM="linux/amd64"
   PLATFORM_FLAG="--platform ${PLATFORM}"
 else
-  KIND_CLUSTER="${KIND_CLUSTER:-qw}"
+  KIND_CLUSTER="${KIND_CLUSTER:-tokonoma}"
   PLATFORM_FLAG=""
 fi
 

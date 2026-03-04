@@ -21,6 +21,7 @@ for arg in "$@"; do
   case "$arg" in
     --kind) TARGET="kind" ;;
     --eks)  TARGET="eks" ;;
+    --gke)  echo "Error: --gke is not yet implemented"; exit 1 ;;
     *)      echo "Unknown argument: $arg"; echo "Usage: $0 --kind | --eks"; exit 1 ;;
   esac
 done

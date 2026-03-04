@@ -1,37 +1,33 @@
-[![Build Status](https://travis-ci.org/microservices-demo/shipping.svg?branch=master)](https://travis-ci.org/microservices-demo/shipping) [![Coverage Status](https://coveralls.io/repos/github/microservices-demo/shipping/badge.svg?branch=master)](https://coveralls.io/github/microservices-demo/shipping?branch=master)
-[![](https://images.microbadger.com/badges/image/weaveworksdemos/shipping.svg)](http://microbadger.com/images/weaveworksdemos/shipping "Get your own image badge on microbadger.com")
+# Shipping
 
-# DEPRECATED: shipping
 A microservices-demo service that provides shipping capabilities.
 
-This build is built, tested and released by travis.
+**Stack:** Java 17, Spring Boot 2.7.18, RabbitMQ
 
-# Build
+## Build
 
-## Java
+```bash
+# Build from repo root
+./bin/build --kind   # or --eks
 
-`mvn -DskipTests package`
+# Or build locally with Maven
+mvn -DskipTests package
+```
 
-## Docker
+## Run
 
-`GROUP=weaveworksdemos COMMIT=test ./scripts/build.sh`
+```bash
+mvn spring-boot:run
+```
 
-# Test
+## Check
 
-`./test/test.sh < python testing file >`. For example: `./test/test.sh unit.py`
+```bash
+curl http://localhost:8080/health
+```
 
-# Run
+## Use
 
-`mvn spring-boot:run`
-
-# Check
-
-`curl http://localhost:8080/health`
-
-# Use
-
-`curl http://localhost:8080`
-
-# Push
-
-`GROUP=weaveworksdemos COMMIT=test ./scripts/push.sh`
+```bash
+curl http://localhost:8080
+```

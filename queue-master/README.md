@@ -1,34 +1,17 @@
-[![Build Status](https://travis-ci.org/microservices-demo/queue-master.svg?branch=master)](https://travis-ci.org/microservices-demo/queue-master)
-[![Coverage Status](https://coveralls.io/repos/github/microservices-demo/queue-master/badge.svg?branch=master)](https://coveralls.io/github/microservices-demo/queue-master?branch=master)
-[![](https://images.microbadger.com/badges/image/weaveworksdemos/queue-master.svg)](http://microbadger.com/images/weaveworksdemos/queue-master "Get your own image badge on microbadger.com")
+# Queue Master
 
-# DEPRECATED: queue-master
+A microservices-demo service that reads from the shipping queue and processes shipment requests.
 
-A microservices-demo service that provides reading from the shipping
-queue. It will spawn new docker containers that simulate the shipping
-process.
+**Stack:** Java 17, Spring Boot 2.7.18, RabbitMQ
 
-This build is built, tested and released by travis.
+## Build
 
-# Test
+```bash
+# Build from repo root
+./bin/build --kind   # or --eks
+```
 
-`./test/test.sh < python testing file >`. For example: `./test/test.sh
-unit.py`
+## Related Services
 
-# Build
-
-`GROUP=weaveworksdemos COMMIT=test ./scripts/build.sh`
-
-# Push
-
-`GROUP=weaveworksdemos COMMIT=test ./scripts/push.sh`
-
-
-## Redesign
-
-This service will shortly be redesigned.
-
-- Remove docker container shipping like functionality. Was only to make
-  a better demonstration on Scope.
-- Read object from queue and provide feedback on status
-- See microservices-demo/orders and microservices-demo/shipping
+- [orders](../orders/) - Creates orders and sends to shipping queue
+- [shipping](../shipping/) - Shipping service

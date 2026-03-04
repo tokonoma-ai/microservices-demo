@@ -12,8 +12,8 @@ Demonstrates log investigation using Tokonoma (toko-mcp) against live Sock Shop 
 
 ```bash
 cd ../2o/platform
-./bin/setup          # creates kind cluster "qw"
-./bin/deploy         # deploys Quickwit, OTel collector, MCP server
+./bin/setup          # creates kind cluster "tokonoma"
+./bin/deploy --kind  # deploys Quickwit, OTel collector, MCP server
 ./bin/port-forward   # waits for readiness, starts port-forwards
 ```
 
@@ -33,10 +33,10 @@ All services are built from source. Specify your target cluster:
 
 ```bash
 cd ../load-generators
-./bin/demo   # build checkout-injector, deploy load-test + CronJob, trigger first failure
+./bin/demo   # build demodatagen, deploy, trigger first checkout failure
 ```
 
-Background load (load-test) hits front-end. Checkout-fail-injector runs every 15 min and once immediately at startup.
+The demodatagen load generator runs weighted-random user journeys continuously and triggers injection scenarios (checkout failures, payment errors) every ~30 minutes.
 
 ### 4. Verify Readiness
 
@@ -65,6 +65,6 @@ See [DEVELOP.md](./DEVELOP.md) for detailed build/deploy documentation.
 
 The application is the user-facing part of an online shop that sells socks. It is intended to aid the demonstration and testing of microservice and cloud native technologies.
 
-It is built using [Spring Boot](http://projects.spring.io/spring-boot/), [Go kit](http://gokit.io) and [Node.js](https://nodejs.org/) and is packaged in Docker containers.
+It is built using [Spring Boot](http://projects.spring.io/spring-boot/) (Java 17), [Go kit](http://gokit.io) (Go 1.24) and [Node.js](https://nodejs.org/) (Node 20), and is packaged in Docker containers.
 
 You can read more about the [application design](./internal-docs/design.md).
