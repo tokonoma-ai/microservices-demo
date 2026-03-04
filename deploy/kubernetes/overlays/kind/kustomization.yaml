@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../manifests
+
+images:
+  - name: weaveworksdemos/carts
+    newTag: dev
+  - name: weaveworksdemos/catalogue
+    newTag: dev
+  - name: weaveworksdemos/orders
+    newTag: dev
+  - name: weaveworksdemos/front-end
+    newTag: dev
+  - name: weaveworksdemos/shipping
+    newTag: dev
+  - name: weaveworksdemos/queue-master
+    newTag: dev
+  - name: weaveworksdemos/payment
+    newTag: dev
+  - name: weaveworksdemos/user
+    newTag: dev

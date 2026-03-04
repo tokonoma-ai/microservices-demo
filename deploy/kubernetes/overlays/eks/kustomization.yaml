@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../manifests
+
+images:
+  - name: weaveworksdemos/carts
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/carts
+    newTag: dev
+  - name: weaveworksdemos/catalogue
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/catalogue
+    newTag: dev
+  - name: weaveworksdemos/orders
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/orders
+    newTag: dev
+  - name: weaveworksdemos/front-end
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/front-end
+    newTag: dev
+  - name: weaveworksdemos/shipping
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/shipping
+    newTag: dev
+  - name: weaveworksdemos/queue-master
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/queue-master
+    newTag: dev
+  - name: weaveworksdemos/payment
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/payment
+    newTag: dev
+  - name: weaveworksdemos/user
+    newName: 853962316687.dkr.ecr.us-west-2.amazonaws.com/sockshop/user
+    newTag: dev

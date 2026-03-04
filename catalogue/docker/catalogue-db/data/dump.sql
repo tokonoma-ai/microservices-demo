@@ -47,7 +47,6 @@ INSERT INTO sock VALUES ("bad00001-0000-0000-0000-000000000001", "Ghost", "This 
 -- Cursed Sock: Has negative price, which can cause checkout to fail with invalid payment amount
 -- when combined with low-value items (total can drop below $0)
 INSERT INTO sock VALUES ("bad00002-0000-0000-0000-000000000002", "Cursed", "This sock has a negative price due to a data entry error. When added to cart with other items, it can cause the order total to become negative, triggering payment validation failures.", -5.00, 50, "/catalogue/images/holy_1.jpeg", "/catalogue/images/holy_2.jpeg");
-INSERT INTO sock_tag VALUES ("bad00002-0000-0000-0000-000000000002", "10");
 
 INSERT INTO tag (name) VALUES ("brown");
 INSERT INTO tag (name) VALUES ("geek");
@@ -86,6 +85,7 @@ INSERT INTO sock_tag VALUES ("3395a43e-2d88-40de-b95f-e00e1502085b", "4");
 INSERT INTO sock_tag VALUES ("837ab141-399e-4c1f-9abc-bace40296bac", "1");
 INSERT INTO sock_tag VALUES ("837ab141-399e-4c1f-9abc-bace40296bac", "11");
 INSERT INTO sock_tag VALUES ("837ab141-399e-4c1f-9abc-bace40296bac", "3");
+INSERT INTO sock_tag VALUES ("bad00002-0000-0000-0000-000000000002", "10");
 
 
 

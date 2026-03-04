@@ -1,23 +1,9 @@
 PWD = $(shell pwd)
-MANIFESTS = $(or $(shell printenv MANIFESTS), manifests)
 
-.PHONY: gen-complete-demo
-gen-complete-demo:
-	awk '{print}' ${MANIFESTS}/* > complete-demo.yaml
-.PHONY: check-complete-demo
-check-complete-demo:
-	awk '{print}' ${MANIFESTS}/* | diff complete-demo.yaml -
-.dockerimage: Dockerfile
-	docker build -t manifests-image .
-	touch .dockerimage
+.PHONY: render-kind
+render-kind:
+	kubectl kustomize overlays/kind
 
-.PHONY: docker-%
-docker-%: .dockerimage
-	docker \
-	  run \
-	  --rm \
-	  -it \
-	  -u ${UID}:${GID} \
-	  -v ${PWD}:/workdir \
-	  manifests-image \
-	  make $*
+.PHONY: render-eks
+render-eks:
+	kubectl kustomize overlays/eks

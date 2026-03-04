@@ -1,0 +1,305 @@
+#!/usr/bin/env bash
+# Build dev images for all Sock Shop services.
+#
+# Usage:
+#   ./bin/build --kind              Build and load into kind cluster
+#   ./bin/build --eks               Build for amd64, push to ECR
+#   ./bin/build --kind --force      Rebuild all services even if unchanged
+#
+# Images are tagged with the git SHA: dev-<sha> (or dev-<sha>-dirty).
+# Unchanged services are skipped unless --force is specified.
+# Build results are written to .build-manifest.json for use by bin/deploy.
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${SCRIPT_DIR}/.."
+MANIFEST="${REPO_ROOT}/.build-manifest.json"
+
+SERVICES="carts orders shipping queue-master catalogue payment user front-end"
+
+# --- Parse arguments ----------------------------------------------------------
+
+TARGET=""
+FORCE=false
+for arg in "$@"; do
+  case "$arg" in
+    --kind)  TARGET="kind" ;;
+    --eks)   TARGET="eks" ;;
+    --force) FORCE=true ;;
+    *)       echo "Unknown argument: $arg"; echo "Usage: $0 --kind|--eks [--force]"; exit 1 ;;
+  esac
+done
+
+if [ -z "$TARGET" ]; then
+  echo "Error: specify --kind or --eks"
+  echo "Usage: $0 --kind|--eks [--force]"
+  exit 1
+fi
+
+# --- Git SHA and tag ----------------------------------------------------------
+
+GIT_SHA=$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD)
+if git -C "${REPO_ROOT}" diff --quiet HEAD 2>/dev/null; then
+  GIT_DIRTY=false
+  TAG="dev-${GIT_SHA}"
+else
+  GIT_DIRTY=true
+  TAG="dev-${GIT_SHA}-dirty"
+fi
+
+# --- Target-specific config ---------------------------------------------------
+
+if [ "$TARGET" = "eks" ]; then
+  AWS_ACCOUNT="${AWS_ACCOUNT:-853962316687}"
+  REGION="${AWS_REGION:-us-west-2}"
+  REGISTRY="${AWS_ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+  PLATFORM="linux/amd64"
+  PLATFORM_FLAG="--platform ${PLATFORM}"
+else
+  KIND_CLUSTER="${KIND_CLUSTER:-qw}"
+  PLATFORM_FLAG=""
+fi
+
+image_name() {
+  local svc="$1" t="$2"
+  if [ "$TARGET" = "eks" ]; then
+    echo "${REGISTRY}/sockshop/${svc}:${t}"
+  else
+    echo "weaveworksdemos/${svc}:${t}"
+  fi
+}
+
+echo "============================================================================="
+echo "Building dev images for Sock Shop"
+echo "  Target:  ${TARGET}"
+echo "  Git SHA: ${GIT_SHA}$( [ "$GIT_DIRTY" = "true" ] && echo ' (dirty)' || true)"
+echo "  Tag:     ${TAG}"
+echo "  Force:   ${FORCE}"
+echo "============================================================================="
+
+# --- Read previous manifest for change detection (via python3) ----------------
+
+prev_source_sha_for() {
+  local svc="$1"
+  if [ -f "$MANIFEST" ] && [ "$FORCE" = "false" ]; then
+    python3 -c "
+import json, sys
+m = json.load(open('${MANIFEST}'))
+info = m.get('services', {}).get('${svc}', {})
+print(info.get('source_sha', ''))
+" 2>/dev/null || true
+  fi
+}
+
+prev_tag_for() {
+  local svc="$1"
+  python3 -c "
+import json
+m = json.load(open('${MANIFEST}'))
+print(m.get('services',{}).get('${svc}',{}).get('tag',''))
+" 2>/dev/null || true
+}
+
+prev_image_for() {
+  local svc="$1"
+  python3 -c "
+import json
+m = json.load(open('${MANIFEST}'))
+print(m.get('services',{}).get('${svc}',{}).get('image',''))
+" 2>/dev/null || true
+}
+
+# --- Change detection ---------------------------------------------------------
+
+service_changed() {
+  local svc="$1"
+  if [ "$FORCE" = "true" ]; then return 0; fi
+  if [ "$GIT_DIRTY" = "true" ]; then return 0; fi
+
+  local prev_sha
+  prev_sha=$(prev_source_sha_for "$svc")
+  if [ -z "$prev_sha" ]; then return 0; fi
+
+  if git -C "${REPO_ROOT}" diff --quiet "${prev_sha}" HEAD -- "${svc}/"; then
+    return 1
+  fi
+  return 0
+}
+
+# --- EKS: ECR login + create repos -------------------------------------------
+
+if [ "$TARGET" = "eks" ]; then
+  echo
+  echo "==> Authenticating Docker to ECR..."
+  aws ecr get-login-password --region "${REGION}" | \
+    docker login --username AWS --password-stdin "${REGISTRY}"
+
+  echo
+  echo "==> Ensuring ECR repositories exist..."
+  for svc in $SERVICES; do
+    aws ecr create-repository \
+      --repository-name "sockshop/${svc}" \
+      --region "${REGION}" 2>/dev/null || true
+  done
+fi
+
+# --- Build helpers ------------------------------------------------------------
+
+# Collect results: parallel lists (bash 3 compatible)
+RESULT_SVCS=""
+RESULT_TAGS=""
+RESULT_IMAGES=""
+RESULT_SHAS=""
+BUILT_COUNT=0
+SKIPPED_COUNT=0
+
+record_result() {
+  local svc="$1" t="$2" img="$3" sha="$4"
+  RESULT_SVCS="${RESULT_SVCS}${svc}|"
+  RESULT_TAGS="${RESULT_TAGS}${t}|"
+  RESULT_IMAGES="${RESULT_IMAGES}${img}|"
+  RESULT_SHAS="${RESULT_SHAS}${sha}|"
+}
+
+build_java() {
+  local svc="$1"
+  echo "==> Building ${svc} JAR (Maven, Java 17)..."
+  docker run --rm ${PLATFORM_FLAG} \
+    -v "${REPO_ROOT}/${svc}":/build \
+    -w /build \
+    maven:3-eclipse-temurin-17 \
+    mvn package -DskipTests -q
+
+  echo "==> Building ${svc} Docker image..."
+  docker build ${PLATFORM_FLAG} \
+    -t "$(image_name "${svc}" "${TAG}")" \
+    "${REPO_ROOT}/${svc}"
+}
+
+build_go() {
+  local svc="$1"
+  echo "==> Building ${svc} Docker image (Go multi-stage)..."
+  docker build ${PLATFORM_FLAG} \
+    -t "$(image_name "${svc}" "${TAG}")" \
+    -f "${REPO_ROOT}/${svc}/docker/${svc}/Dockerfile" \
+    "${REPO_ROOT}/${svc}"
+}
+
+build_node() {
+  local svc="$1"
+  echo "==> Building ${svc} Docker image (Node.js)..."
+  docker build ${PLATFORM_FLAG} \
+    -t "$(image_name "${svc}" "${TAG}")" \
+    "${REPO_ROOT}/${svc}"
+}
+
+# --- Build each service -------------------------------------------------------
+
+for svc in $SERVICES; do
+  echo
+  if ! service_changed "$svc"; then
+    prev_sha=$(prev_source_sha_for "$svc")
+    echo "==> ${svc}: unchanged since ${prev_sha}, skipping"
+    record_result "$svc" "$(prev_tag_for "$svc")" "$(prev_image_for "$svc")" "$prev_sha"
+    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+    continue
+  fi
+
+  case "$svc" in
+    carts|orders|shipping|queue-master) build_java "$svc" ;;
+    catalogue|payment|user)             build_go "$svc" ;;
+    front-end)                          build_node "$svc" ;;
+  esac
+  record_result "$svc" "$TAG" "$(image_name "$svc" "$TAG")" "$GIT_SHA"
+  BUILT_COUNT=$((BUILT_COUNT + 1))
+done
+
+# --- Deliver images -----------------------------------------------------------
+
+echo
+if [ "$TARGET" = "eks" ]; then
+  echo "==> Pushing images to ECR..."
+  idx=0
+  for svc in $SERVICES; do
+    idx=$((idx + 1))
+    svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
+    svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
+    if [ "$svc_sha" = "$GIT_SHA" ]; then
+      echo "  Pushing ${svc_img}..."
+      docker push "${svc_img}"
+    else
+      echo "  ${svc}: skipped (unchanged)"
+    fi
+  done
+else
+  echo "==> Loading images into kind cluster '${KIND_CLUSTER}'..."
+  idx=0
+  for svc in $SERVICES; do
+    idx=$((idx + 1))
+    svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
+    svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
+    if [ "$svc_sha" = "$GIT_SHA" ]; then
+      kind load docker-image "${svc_img}" --name "${KIND_CLUSTER}"
+    else
+      echo "  ${svc}: skipped (unchanged)"
+    fi
+  done
+fi
+
+# --- Write build manifest (via python3 for clean JSON) ------------------------
+
+_DIRTY_PY=$( [ "$GIT_DIRTY" = "true" ] && echo "True" || echo "False" )
+export _SVCS="$RESULT_SVCS" _TAGS="$RESULT_TAGS" _IMGS="$RESULT_IMAGES" _SHAS="$RESULT_SHAS"
+export _TARGET="$TARGET" _GIT_SHA="$GIT_SHA" _DIRTY_PY _TAG="$TAG" _MANIFEST="$MANIFEST"
+python3 << 'PYEOF'
+import json, os
+from datetime import datetime, timezone
+
+svcs   = os.environ["_SVCS"].rstrip("|").split("|")
+tags   = os.environ["_TAGS"].rstrip("|").split("|")
+images = os.environ["_IMGS"].rstrip("|").split("|")
+shas   = os.environ["_SHAS"].rstrip("|").split("|")
+
+services = {}
+for i, svc in enumerate(svcs):
+    services[svc] = {"tag": tags[i], "image": images[i], "source_sha": shas[i]}
+
+manifest = {
+    "target": os.environ["_TARGET"],
+    "git_sha": os.environ["_GIT_SHA"],
+    "dirty": os.environ["_DIRTY_PY"] == "True",
+    "tag": os.environ["_TAG"],
+    "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "services": services,
+}
+
+with open(os.environ["_MANIFEST"], "w") as f:
+    json.dump(manifest, f, indent=2)
+    f.write("\n")
+PYEOF
+
+# --- Done ---------------------------------------------------------------------
+
+echo
+echo "============================================================================="
+echo "Build complete (${TARGET}): ${BUILT_COUNT} built, ${SKIPPED_COUNT} skipped"
+echo ""
+echo "Images:"
+idx=0
+for svc in $SERVICES; do
+  idx=$((idx + 1))
+  svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
+  svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
+  svc_tag=$(echo "$RESULT_TAGS" | cut -d'|' -f"$idx")
+  if [ "$svc_sha" = "$GIT_SHA" ]; then
+    status="built"
+  else
+    status="unchanged (${svc_tag})"
+  fi
+  printf "  %-15s %s  [%s]\n" "$svc" "$svc_img" "$status"
+done
+echo
+echo "Manifest: ${MANIFEST}"
+echo "Deploy with: ./bin/deploy --${TARGET}"
+echo "============================================================================="
