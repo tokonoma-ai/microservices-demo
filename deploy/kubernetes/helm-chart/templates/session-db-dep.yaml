@@ -30,5 +30,11 @@ spec:
               - SETGID
               - SETUID
           readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: data
+          mountPath: /data
         resources:
 {{ toYaml .Values.sessiondb.resources | indent 10 }}
+      volumes:
+      - name: data
+        emptyDir: {}
