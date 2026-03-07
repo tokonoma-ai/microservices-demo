@@ -41,7 +41,7 @@ fi
 # --- Git SHA and tag ----------------------------------------------------------
 
 GIT_SHA=$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD)
-if git -C "${REPO_ROOT}" diff --quiet HEAD 2>/dev/null; then
+if git -C "${REPO_ROOT}" diff --quiet HEAD -- ':!deploy/kubernetes/overlays/*/kustomization.yaml' 2>/dev/null; then
   GIT_DIRTY=false
   TAG="dev-${GIT_SHA}"
 else
