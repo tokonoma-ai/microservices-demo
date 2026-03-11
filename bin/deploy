@@ -5,6 +5,7 @@
 # Usage:
 #   ./bin/deploy --kind         Deploy to kind cluster (local dev images)
 #   ./bin/deploy --eks          Deploy to EKS (ECR dev images)
+#   ./bin/deploy --gke          Deploy to GKE (Artifact Registry dev images)
 #
 set -e
 
@@ -21,14 +22,14 @@ for arg in "$@"; do
   case "$arg" in
     --kind) TARGET="kind" ;;
     --eks)  TARGET="eks" ;;
-    --gke)  echo "Error: --gke is not yet implemented"; exit 1 ;;
-    *)      echo "Unknown argument: $arg"; echo "Usage: $0 --kind | --eks"; exit 1 ;;
+    --gke)  TARGET="gke" ;;
+    *)      echo "Unknown argument: $arg"; echo "Usage: $0 --kind | --eks | --gke"; exit 1 ;;
   esac
 done
 
 if [[ -z "$TARGET" ]]; then
-  echo "Error: specify --kind or --eks"
-  echo "Usage: $0 --kind | --eks"
+  echo "Error: specify --kind, --eks, or --gke"
+  echo "Usage: $0 --kind | --eks | --gke"
   exit 1
 fi
 

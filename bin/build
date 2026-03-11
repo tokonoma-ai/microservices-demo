@@ -4,6 +4,7 @@
 # Usage:
 #   ./bin/build --kind              Build and load into kind cluster
 #   ./bin/build --eks               Build for amd64, push to ECR
+#   ./bin/build --gke               Build for amd64, push to Artifact Registry
 #   ./bin/build --kind --force      Rebuild all services even if unchanged
 #
 # Images are tagged with the git SHA: dev-<sha> (or dev-<sha>-dirty).
@@ -26,15 +27,15 @@ for arg in "$@"; do
   case "$arg" in
     --kind)  TARGET="kind" ;;
     --eks)   TARGET="eks" ;;
-    --gke)   echo "Error: --gke is not yet implemented"; exit 1 ;;
+    --gke)   TARGET="gke" ;;
     --force) FORCE=true ;;
-    *)       echo "Unknown argument: $arg"; echo "Usage: $0 --kind|--eks [--force]"; exit 1 ;;
+    *)       echo "Unknown argument: $arg"; echo "Usage: $0 --kind|--eks|--gke [--force]"; exit 1 ;;
   esac
 done
 
 if [ -z "$TARGET" ]; then
-  echo "Error: specify --kind or --eks"
-  echo "Usage: $0 --kind|--eks [--force]"
+  echo "Error: specify --kind, --eks, or --gke"
+  echo "Usage: $0 --kind|--eks|--gke [--force]"
   exit 1
 fi
 
@@ -51,24 +52,33 @@ fi
 
 # --- Target-specific config ---------------------------------------------------
 
-if [ "$TARGET" = "eks" ]; then
-  AWS_ACCOUNT="${AWS_ACCOUNT:-853962316687}"
-  REGION="${AWS_REGION:-us-west-2}"
-  REGISTRY="${AWS_ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
-  PLATFORM="linux/amd64"
-  PLATFORM_FLAG="--platform ${PLATFORM}"
-else
-  KIND_CLUSTER="${KIND_CLUSTER:-tokonoma}"
-  PLATFORM_FLAG=""
-fi
+case "$TARGET" in
+  eks)
+    AWS_ACCOUNT="${AWS_ACCOUNT:-853962316687}"
+    REGION="${AWS_REGION:-us-west-2}"
+    REGISTRY="${AWS_ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+    PLATFORM_FLAG="--platform linux/amd64"
+    ;;
+  gke)
+    GCP_PROJECT="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    GCP_REGION="${GCP_REGION:-us-west1}"
+    AR_REPO="${AR_REPO:-tokonoma}"
+    REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${AR_REPO}"
+    PLATFORM_FLAG="--platform linux/amd64"
+    ;;
+  kind)
+    KIND_CLUSTER="${KIND_CLUSTER:-tokonoma}"
+    PLATFORM_FLAG=""
+    ;;
+esac
 
 image_name() {
   local svc="$1" t="$2"
-  if [ "$TARGET" = "eks" ]; then
-    echo "${REGISTRY}/sockshop/${svc}:${t}"
-  else
-    echo "weaveworksdemos/${svc}:${t}"
-  fi
+  case "$TARGET" in
+    eks)  echo "${REGISTRY}/sockshop/${svc}:${t}" ;;
+    gke)  echo "${REGISTRY}/sockshop-${svc}:${t}" ;;
+    kind) echo "weaveworksdemos/${svc}:${t}" ;;
+  esac
 }
 
 echo "============================================================================="
@@ -128,7 +138,7 @@ service_changed() {
   return 0
 }
 
-# --- EKS: ECR login + create repos -------------------------------------------
+# --- Cloud registry login + create repos -------------------------------------
 
 if [ "$TARGET" = "eks" ]; then
   echo
@@ -143,6 +153,10 @@ if [ "$TARGET" = "eks" ]; then
       --repository-name "sockshop/${svc}" \
       --region "${REGION}" 2>/dev/null || true
   done
+elif [ "$TARGET" = "gke" ]; then
+  echo
+  echo "==> Authenticating Docker to Artifact Registry..."
+  gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
 fi
 
 # --- Build helpers ------------------------------------------------------------
@@ -219,34 +233,37 @@ done
 # --- Deliver images -----------------------------------------------------------
 
 echo
-if [ "$TARGET" = "eks" ]; then
-  echo "==> Pushing images to ECR..."
-  idx=0
-  for svc in $SERVICES; do
-    idx=$((idx + 1))
-    svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
-    svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
-    if [ "$svc_sha" = "$GIT_SHA" ]; then
-      echo "  Pushing ${svc_img}..."
-      docker push "${svc_img}"
-    else
-      echo "  ${svc}: skipped (unchanged)"
-    fi
-  done
-else
-  echo "==> Loading images into kind cluster '${KIND_CLUSTER}'..."
-  idx=0
-  for svc in $SERVICES; do
-    idx=$((idx + 1))
-    svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
-    svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
-    if [ "$svc_sha" = "$GIT_SHA" ]; then
-      kind load docker-image "${svc_img}" --name "${KIND_CLUSTER}"
-    else
-      echo "  ${svc}: skipped (unchanged)"
-    fi
-  done
-fi
+case "$TARGET" in
+  eks|gke)
+    echo "==> Pushing images to registry..."
+    idx=0
+    for svc in $SERVICES; do
+      idx=$((idx + 1))
+      svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
+      svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
+      if [ "$svc_sha" = "$GIT_SHA" ]; then
+        echo "  Pushing ${svc_img}..."
+        docker push "${svc_img}"
+      else
+        echo "  ${svc}: skipped (unchanged)"
+      fi
+    done
+    ;;
+  kind)
+    echo "==> Loading images into kind cluster '${KIND_CLUSTER}'..."
+    idx=0
+    for svc in $SERVICES; do
+      idx=$((idx + 1))
+      svc_sha=$(echo "$RESULT_SHAS" | cut -d'|' -f"$idx")
+      svc_img=$(echo "$RESULT_IMAGES" | cut -d'|' -f"$idx")
+      if [ "$svc_sha" = "$GIT_SHA" ]; then
+        kind load docker-image "${svc_img}" --name "${KIND_CLUSTER}"
+      else
+        echo "  ${svc}: skipped (unchanged)"
+      fi
+    done
+    ;;
+esac
 
 # --- Write build manifest (via python3 for clean JSON) ------------------------
 
