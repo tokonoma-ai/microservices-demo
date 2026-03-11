@@ -5,7 +5,7 @@ Demonstrates log investigation using Tokonoma (toko-mcp) against live Sock Shop 
 ### Prerequisites
 
 - `docker`, `kubectl`, `helm` v3+
-- `kind` (for local clusters) or `awscli` + `eksctl` (for EKS)
+- `kind` (for local clusters), `awscli` + `eksctl` (for EKS), or `gcloud` (for GKE)
 - The [2o](https://github.com/tokonoma-ai/2o) platform repo cloned alongside this repo
 
 ### 1. Platform (one-time)
@@ -27,6 +27,9 @@ All services are built from source. Specify your target cluster:
 
 # EKS
 ./bin/build --eks && ./bin/deploy --eks
+
+# GKE
+./bin/build --gke && ./bin/deploy --gke
 ```
 
 ### 3. Demo Setup (load generators)
@@ -54,8 +57,8 @@ To trigger another failure: `cd ../load-generators && ./bin/demo` (or re-run the
 
 | Script | Purpose |
 |--------|---------|
-| `bin/build --kind\|--eks` | Build dev images for all services |
-| `bin/deploy --kind\|--eks` | Deploy Sock Shop to the target cluster |
+| `bin/build --kind\|--eks\|--gke` | Build dev images for all services |
+| `bin/deploy --kind\|--eks\|--gke` | Deploy Sock Shop to the target cluster |
 | `bin/demo-ready` | Verify cluster is ready for the demo |
 | `bin/port-forward` | Port-forward front-end to localhost:8080 |
 
