@@ -48,3 +48,18 @@ jobs:
           git commit -m "deploy: update eks overlay to ${TAG} [skip ci]"
           git push
         fi
+
+    - name: Configure kubectl
+      run: aws eks update-kubeconfig --name tokonoma --region us-west-2
+
+    - name: Deploy to EKS
+      run: |
+        kubectl apply -k deploy/kubernetes/overlays/eks
+        for dep in carts catalogue orders front-end payment user shipping queue-master; do
+          kubectl rollout restart deployment/"${dep}" -n sock-shop
+        done
+        for dep in carts catalogue orders front-end payment user shipping queue-master; do
+          echo "Waiting for ${dep}..."
+          kubectl rollout status deployment/"${dep}" -n sock-shop --timeout=300s || \
+            echo "WARNING: ${dep} did not become ready within 300s"
+        done
