@@ -3,9 +3,10 @@
 # Reads .build-manifest.json to determine per-service image tags.
 #
 # Usage:
-#   ./bin/deploy --kind         Deploy to kind cluster (local dev images)
-#   ./bin/deploy --eks          Deploy to EKS (ECR dev images)
-#   ./bin/deploy --gke          Deploy to GKE (Artifact Registry dev images)
+#   ./bin/deploy --kind              Deploy to kind cluster (local dev images)
+#   ./bin/deploy --eks               Deploy to EKS (ECR dev images)
+#   ./bin/deploy --gke               Deploy to GKE (Artifact Registry dev images)
+#   ./bin/deploy --eks --no-apply    Generate overlay only (skip kubectl apply)
 #
 set -e
 
@@ -18,18 +19,20 @@ APP_DEPLOYMENTS=(carts catalogue orders front-end payment user shipping queue-ma
 # --- Parse arguments ----------------------------------------------------------
 
 TARGET=""
+NO_APPLY=false
 for arg in "$@"; do
   case "$arg" in
-    --kind) TARGET="kind" ;;
-    --eks)  TARGET="eks" ;;
-    --gke)  TARGET="gke" ;;
-    *)      echo "Unknown argument: $arg"; echo "Usage: $0 --kind | --eks | --gke"; exit 1 ;;
+    --kind)     TARGET="kind" ;;
+    --eks)      TARGET="eks" ;;
+    --gke)      TARGET="gke" ;;
+    --no-apply) NO_APPLY=true ;;
+    *)          echo "Unknown argument: $arg"; echo "Usage: $0 --kind|--eks|--gke [--no-apply]"; exit 1 ;;
   esac
 done
 
 if [[ -z "$TARGET" ]]; then
   echo "Error: specify --kind, --eks, or --gke"
-  echo "Usage: $0 --kind | --eks | --gke"
+  echo "Usage: $0 --kind|--eks|--gke [--no-apply]"
   exit 1
 fi
 
@@ -91,6 +94,13 @@ for svc, info in m['services'].items():
 } > "$GENERATED_KUSTOMIZATION"
 
 echo "Generated ${GENERATED_KUSTOMIZATION}"
+
+if [[ "$NO_APPLY" == "true" ]]; then
+  echo ""
+  echo "--no-apply: skipping kubectl apply and rollout."
+  echo "To apply manually: kubectl apply -k ${OVERLAY}"
+  exit 0
+fi
 
 # --- Apply --------------------------------------------------------------------
 
