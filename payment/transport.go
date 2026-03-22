@@ -44,6 +44,10 @@ func MakeHTTPHandler(e Endpoints, logger log.Logger, tracer stdopentracing.Trace
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	code := http.StatusInternalServerError
+	var unmarshalErr *UnmarshalKeyError
+	if errors.As(err, &unmarshalErr) || errors.Is(err, ErrInvalidPaymentAmount) {
+		code = http.StatusBadRequest
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -74,6 +78,9 @@ func decodeAuthoriseRequest(_ context.Context, r *http.Request) (interface{}, er
 			Key:  "amount",
 			JSON: bodyString,
 		}
+	}
+	if request.Amount < 0 {
+		return nil, ErrInvalidPaymentAmount
 	}
 	return request, nil
 }
