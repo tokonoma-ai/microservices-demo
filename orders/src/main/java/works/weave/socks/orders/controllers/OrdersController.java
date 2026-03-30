@@ -10,6 +10,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpServerErrorException;
 import works.weave.socks.orders.config.OrdersConfigurationProperties;
 import works.weave.socks.orders.entities.*;
 import works.weave.socks.orders.repositories.CustomerOrderRepository;
@@ -73,6 +74,11 @@ public class OrdersController {
             LOG.debug("End of calls.");
 
             float amount = calculateTotal(itemsFuture.get(timeout, TimeUnit.SECONDS));
+            if (amount <= 0) {
+                throw new InvalidOrderException(
+                        "Order total must be greater than zero; computed amount: " + amount +
+                        ". One or more items in the cart may have an invalid price.");
+            }
 
             // Call payment service to make sure they've paid
             PaymentRequest paymentRequest = new PaymentRequest(
@@ -123,7 +129,19 @@ public class OrdersController {
         } catch (TimeoutException e) {
             LOG.error("action=new_order customer_url={} status=failed err=timeout", item.customer, e);
             throw new IllegalStateException("Unable to create order due to timeout from one of the services.", e);
-        } catch (InterruptedException | IOException | ExecutionException e) {
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof HttpServerErrorException) {
+                HttpServerErrorException httpEx = (HttpServerErrorException) cause;
+                String responseBody = httpEx.getResponseBodyAsString();
+                LOG.error("action=new_order customer_url={} status=failed err={} payment_response={}",
+                        item.customer, httpEx.getMessage(), responseBody);
+                throw new PaymentDeclinedException("Payment service error: " + httpEx.getStatusCode() +
+                        (responseBody != null && !responseBody.isEmpty() ? " - " + responseBody : ""));
+            }
+            LOG.error("action=new_order customer_url={} status=failed err={}", item.customer, e.getMessage(), e);
+            throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
+        } catch (InterruptedException | IOException e) {
             LOG.error("action=new_order customer_url={} status=failed err={}", item.customer, e.getMessage(), e);
             throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
         }
