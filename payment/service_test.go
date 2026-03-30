@@ -1,7 +1,10 @@
 package payment
 
-import "testing"
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"testing"
+)
 
 func TestAuthorise(t *testing.T) {
 	result, _ := NewAuthorisationService(100).Authorise(10)
@@ -24,18 +27,32 @@ func TestFailOverCertainAmount(t *testing.T) {
 
 func TestFailIfAmountIsZero(t *testing.T) {
 	_, err := NewAuthorisationService(10).Authorise(0)
-	_, ok := err.(error)
-	if !ok {
-		t.Errorf("Authorise returned unexpected result: got %v want %v",
-			err, "Zero payment")
+	if err == nil {
+		t.Fatal("Authorise expected error for zero amount, got nil")
+	}
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise expected ErrInvalidPaymentAmount for zero amount, got %v", err)
 	}
 }
 
 func TestFailIfAmountNegative(t *testing.T) {
 	_, err := NewAuthorisationService(10).Authorise(-1)
-	_, ok := err.(error)
-	if !ok {
-		t.Errorf("Authorise returned unexpected result: got %v want %v",
-			err, "Negative payment")
+	if err == nil {
+		t.Fatal("Authorise expected error for negative amount, got nil")
+	}
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise expected ErrInvalidPaymentAmount for negative amount, got %v", err)
+	}
+}
+
+// TestFailIfAmountNegativeLarge verifies that large negative amounts (e.g. from a
+// catalogue item with a corrupted/negative price) are also rejected.
+func TestFailIfAmountNegativeLarge(t *testing.T) {
+	_, err := NewAuthorisationService(1000).Authorise(-500)
+	if err == nil {
+		t.Fatal("Authorise expected error for large negative amount, got nil")
+	}
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise expected ErrInvalidPaymentAmount for large negative amount, got %v", err)
 	}
 }
