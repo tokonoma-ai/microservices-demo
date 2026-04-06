@@ -1,7 +1,10 @@
 package payment
 
-import "testing"
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"testing"
+)
 
 func TestAuthorise(t *testing.T) {
 	result, _ := NewAuthorisationService(100).Authorise(10)
@@ -24,18 +27,24 @@ func TestFailOverCertainAmount(t *testing.T) {
 
 func TestFailIfAmountIsZero(t *testing.T) {
 	_, err := NewAuthorisationService(10).Authorise(0)
-	_, ok := err.(error)
-	if !ok {
-		t.Errorf("Authorise returned unexpected result: got %v want %v",
-			err, "Zero payment")
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise returned unexpected error for zero amount: got %v want %v",
+			err, ErrInvalidPaymentAmount)
 	}
 }
 
 func TestFailIfAmountNegative(t *testing.T) {
 	_, err := NewAuthorisationService(10).Authorise(-1)
-	_, ok := err.(error)
-	if !ok {
-		t.Errorf("Authorise returned unexpected result: got %v want %v",
-			err, "Negative payment")
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise returned unexpected error for negative amount: got %v want %v",
+			err, ErrInvalidPaymentAmount)
+	}
+}
+
+func TestFailIfAmountNegativeLarge(t *testing.T) {
+	_, err := NewAuthorisationService(10).Authorise(-500)
+	if !errors.Is(err, ErrInvalidPaymentAmount) {
+		t.Errorf("Authorise returned unexpected error for large negative amount: got %v want %v",
+			err, ErrInvalidPaymentAmount)
 	}
 }
