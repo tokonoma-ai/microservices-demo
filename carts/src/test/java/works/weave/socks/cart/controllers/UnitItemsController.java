@@ -15,6 +15,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration
@@ -57,6 +58,18 @@ public class UnitItemsController {
         assertThat(itemsController.getItems(customerId), is(hasSize(1)));
         itemsController.removeItem(customerId, item.itemId());
         assertThat(itemsController.getItems(customerId), is(hasSize(0)));
+    }
+
+    @Test
+    public void shouldRejectNegativeUnitPrice() {
+        Item item = new Item("id", "itemId", 1, -5.0F);
+        String customerId = "customerIdNegativePrice";
+        try {
+            itemsController.addToCart(customerId, item);
+            fail("Expected IllegalArgumentException for negative unit price");
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage(), is(equalTo("Item unit price must not be negative: " + item.getUnitPrice())));
+        }
     }
 
     @Test
