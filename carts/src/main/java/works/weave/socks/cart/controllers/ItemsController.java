@@ -47,6 +47,11 @@ public class ItemsController {
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping(consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     public Item addToCart(@PathVariable String customerId, @RequestBody Item item) {
+        if (item.getUnitPrice() < 0) {
+            LOG.warn("action=add_to_cart customer_id={} item_id={} unit_price={} status=rejected err=negative_unit_price",
+                    customerId, item.itemId(), item.getUnitPrice());
+            throw new IllegalArgumentException("Item unit price must not be negative: " + item.getUnitPrice());
+        }
         try {
             // If the item does not exist in the cart, create new one in the repository.
             FoundItem foundItem = new FoundItem(() -> cartsController.get(customerId).contents(), () -> item);
