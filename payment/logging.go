@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-kit/log"
@@ -21,24 +22,24 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-func (mw loggingMiddleware) Authorise(amount float32) (auth Authorisation, err error) {
+func (mw loggingMiddleware) Authorise(ctx context.Context, amount float32) (auth Authorisation, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		mw.logger.Log(append([]interface{}{
 			"method", "Authorise",
 			"result", auth.Authorised,
 			"took", time.Since(begin),
-		)
+		}, TraceLogKV(ctx)...)...)
 	}(time.Now())
-	return mw.next.Authorise(amount)
+	return mw.next.Authorise(ctx, amount)
 }
 
-func (mw loggingMiddleware) Health() (health []Health) {
+func (mw loggingMiddleware) Health(ctx context.Context) (health []Health) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		mw.logger.Log(append([]interface{}{
 			"method", "Health",
 			"result", len(health),
 			"took", time.Since(begin),
-		)
+		}, TraceLogKV(ctx)...)...)
 	}(time.Now())
-	return mw.next.Health()
+	return mw.next.Health(ctx)
 }

@@ -4,6 +4,7 @@ package api
 // user service. Everything here is agnostic to the transport (HTTP).
 
 import (
+	"context"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -20,16 +21,16 @@ var (
 
 // Service is the user service, providing operations for users to login, register, and retrieve customer information.
 type Service interface {
-	Login(username, password string) (users.User, error) // GET /login
-	Register(username, password, email, first, last string) (string, error)
-	GetUsers(id string) ([]users.User, error)
-	PostUser(u users.User) (string, error)
-	GetAddresses(id string) ([]users.Address, error)
-	PostAddress(u users.Address, userid string) (string, error)
-	GetCards(id string) ([]users.Card, error)
-	PostCard(u users.Card, userid string) (string, error)
-	Delete(entity, id string) error
-	Health() []Health // GET /health
+	Login(ctx context.Context, username, password string) (users.User, error) // GET /login
+	Register(ctx context.Context, username, password, email, first, last string) (string, error)
+	GetUsers(ctx context.Context, id string) ([]users.User, error)
+	PostUser(ctx context.Context, u users.User) (string, error)
+	GetAddresses(ctx context.Context, id string) ([]users.Address, error)
+	PostAddress(ctx context.Context, u users.Address, userid string) (string, error)
+	GetCards(ctx context.Context, id string) ([]users.Card, error)
+	PostCard(ctx context.Context, u users.Card, userid string) (string, error)
+	Delete(ctx context.Context, entity, id string) error
+	Health(ctx context.Context) []Health // GET /health
 }
 
 // NewFixedService returns a simple implementation of the Service interface,
@@ -45,7 +46,7 @@ type Health struct {
 	Time    string `json:"time"`
 }
 
-func (s *fixedService) Login(username, password string) (users.User, error) {
+func (s *fixedService) Login(_ context.Context, username, password string) (users.User, error) {
 	u, err := db.GetUserByName(username)
 	if err != nil {
 		return users.New(), err
@@ -59,7 +60,7 @@ func (s *fixedService) Login(username, password string) (users.User, error) {
 
 }
 
-func (s *fixedService) Register(username, password, email, first, last string) (string, error) {
+func (s *fixedService) Register(_ context.Context, username, password, email, first, last string) (string, error) {
 	u := users.New()
 	u.Username = username
 	u.Password = calculatePassHash(password, u.Salt)
@@ -70,7 +71,7 @@ func (s *fixedService) Register(username, password, email, first, last string) (
 	return u.UserID, err
 }
 
-func (s *fixedService) GetUsers(id string) ([]users.User, error) {
+func (s *fixedService) GetUsers(_ context.Context, id string) ([]users.User, error) {
 	if id == "" {
 		us, err := db.GetUsers()
 		for k, u := range us {
@@ -84,14 +85,14 @@ func (s *fixedService) GetUsers(id string) ([]users.User, error) {
 	return []users.User{u}, err
 }
 
-func (s *fixedService) PostUser(u users.User) (string, error) {
+func (s *fixedService) PostUser(_ context.Context, u users.User) (string, error) {
 	u.NewSalt()
 	u.Password = calculatePassHash(u.Password, u.Salt)
 	err := db.CreateUser(&u)
 	return u.UserID, err
 }
 
-func (s *fixedService) GetAddresses(id string) ([]users.Address, error) {
+func (s *fixedService) GetAddresses(_ context.Context, id string) ([]users.Address, error) {
 	if id == "" {
 		as, err := db.GetAddresses()
 		for k, a := range as {
@@ -105,12 +106,12 @@ func (s *fixedService) GetAddresses(id string) ([]users.Address, error) {
 	return []users.Address{a}, err
 }
 
-func (s *fixedService) PostAddress(add users.Address, userid string) (string, error) {
+func (s *fixedService) PostAddress(_ context.Context, add users.Address, userid string) (string, error) {
 	err := db.CreateAddress(&add, userid)
 	return add.ID, err
 }
 
-func (s *fixedService) GetCards(id string) ([]users.Card, error) {
+func (s *fixedService) GetCards(_ context.Context, id string) ([]users.Card, error) {
 	if id == "" {
 		cs, err := db.GetCards()
 		for k, c := range cs {
@@ -124,16 +125,16 @@ func (s *fixedService) GetCards(id string) ([]users.Card, error) {
 	return []users.Card{c}, err
 }
 
-func (s *fixedService) PostCard(card users.Card, userid string) (string, error) {
+func (s *fixedService) PostCard(_ context.Context, card users.Card, userid string) (string, error) {
 	err := db.CreateCard(&card, userid)
 	return card.ID, err
 }
 
-func (s *fixedService) Delete(entity, id string) error {
+func (s *fixedService) Delete(_ context.Context, entity, id string) error {
 	return db.Delete(entity, id)
 }
 
-func (s *fixedService) Health() []Health {
+func (s *fixedService) Health(_ context.Context) []Health {
 	var health []Health
 	dbstatus := "OK"
 

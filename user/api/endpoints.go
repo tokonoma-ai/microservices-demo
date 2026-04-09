@@ -53,7 +53,7 @@ func MakeLoginEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(loginRequest)
-		u, err := s.Login(req.Username, req.Password)
+		u, err := s.Login(ctx, req.Username, req.Password)
 		return userResponse{User: u}, err
 	}
 }
@@ -66,7 +66,7 @@ func MakeRegisterEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(registerRequest)
-		id, err := s.Register(req.Username, req.Password, req.Email, req.FirstName, req.LastName)
+		id, err := s.Register(ctx, req.Username, req.Password, req.Email, req.FirstName, req.LastName)
 		return postResponse{ID: id}, err
 	}
 }
@@ -82,7 +82,7 @@ func MakeUserGetEndpoint(s Service) endpoint.Endpoint {
 		req := request.(GetRequest)
 
 		userspan := stdopentracing.StartSpan("users from db", stdopentracing.ChildOf(span.Context()))
-		usrs, err := s.GetUsers(req.ID)
+		usrs, err := s.GetUsers(ctx, req.ID)
 		userspan.Finish()
 		if req.ID == "" {
 			return EmbedStruct{usersResponse{Users: usrs}}, err
@@ -118,7 +118,7 @@ func MakeUserPostEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(users.User)
-		id, err := s.PostUser(req)
+		id, err := s.PostUser(ctx, req)
 		return postResponse{ID: id}, err
 	}
 }
@@ -132,7 +132,7 @@ func MakeAddressGetEndpoint(s Service) endpoint.Endpoint {
 		defer span.Finish()
 		req := request.(GetRequest)
 		addrspan := stdopentracing.StartSpan("addresses from db", stdopentracing.ChildOf(span.Context()))
-		adds, err := s.GetAddresses(req.ID)
+		adds, err := s.GetAddresses(ctx, req.ID)
 		addrspan.Finish()
 		if req.ID == "" {
 			return EmbedStruct{addressesResponse{Addresses: adds}}, err
@@ -152,7 +152,7 @@ func MakeAddressPostEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(addressPostRequest)
-		id, err := s.PostAddress(req.Address, req.UserID)
+		id, err := s.PostAddress(ctx, req.Address, req.UserID)
 		return postResponse{ID: id}, err
 	}
 }
@@ -166,7 +166,7 @@ func MakeCardGetEndpoint(s Service) endpoint.Endpoint {
 		defer span.Finish()
 		req := request.(GetRequest)
 		cardspan := stdopentracing.StartSpan("addresses from db", stdopentracing.ChildOf(span.Context()))
-		cards, err := s.GetCards(req.ID)
+		cards, err := s.GetCards(ctx, req.ID)
 		cardspan.Finish()
 		if req.ID == "" {
 			return EmbedStruct{cardsResponse{Cards: cards}}, err
@@ -186,7 +186,7 @@ func MakeCardPostEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(cardPostRequest)
-		id, err := s.PostCard(req.Card, req.UserID)
+		id, err := s.PostCard(ctx, req.Card, req.UserID)
 		return postResponse{ID: id}, err
 	}
 }
@@ -199,7 +199,7 @@ func MakeDeleteEndpoint(s Service) endpoint.Endpoint {
 		span.SetTag("service", "user")
 		defer span.Finish()
 		req := request.(deleteRequest)
-		err = s.Delete(req.Entity, req.ID)
+		err = s.Delete(ctx, req.Entity, req.ID)
 		if err == nil {
 			return statusResponse{Status: true}, err
 		}
@@ -214,7 +214,7 @@ func MakeHealthEndpoint(s Service) endpoint.Endpoint {
 		span, ctx = stdopentracing.StartSpanFromContext(ctx, "health check")
 		span.SetTag("service", "user")
 		defer span.Finish()
-		health := s.Health()
+		health := s.Health(ctx)
 		return healthResponse{Health: health}, nil
 	}
 }
