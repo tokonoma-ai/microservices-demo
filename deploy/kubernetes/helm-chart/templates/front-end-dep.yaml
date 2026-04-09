@@ -27,6 +27,10 @@ spec:
         env:
         - name: SESSION_REDIS
           value: "true"
+        - name: OTEL_SERVICE_NAME
+          value: "front-end"
+        - name: ZIPKIN
+          value: http://otel-collector-opentelemetry-collector.platform.svc.cluster.local:9411/api/v1/spans
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
