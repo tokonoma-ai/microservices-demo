@@ -1,6 +1,7 @@
 package catalogue
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-func (mw loggingMiddleware) List(tags []string, order string, pageNum, pageSize int) (socks []Sock, err error) {
+func (mw loggingMiddleware) List(ctx context.Context, tags []string, order string, pageNum, pageSize int) (socks []Sock, err error) {
 	defer func(begin time.Time) {
 		lvs := []interface{}{
 			"method", "List",
@@ -36,25 +37,26 @@ func (mw loggingMiddleware) List(tags []string, order string, pageNum, pageSize 
 		if err != nil {
 			lvs = append(lvs, "err", err)
 		}
+		lvs = append(lvs, TraceLogKV(ctx)...)
 		mw.logger.Log(lvs...)
 	}(time.Now())
-	return mw.next.List(tags, order, pageNum, pageSize)
+	return mw.next.List(ctx, tags, order, pageNum, pageSize)
 }
 
-func (mw loggingMiddleware) Count(tags []string) (n int, err error) {
+func (mw loggingMiddleware) Count(ctx context.Context, tags []string) (n int, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		mw.logger.Log(append([]interface{}{
 			"method", "Count",
 			"tags", strings.Join(tags, ", "),
 			"result", n,
 			"err", err,
 			"took", time.Since(begin),
-		)
+		}, TraceLogKV(ctx)...)...)
 	}(time.Now())
-	return mw.next.Count(tags)
+	return mw.next.Count(ctx, tags)
 }
 
-func (mw loggingMiddleware) Get(id string) (s Sock, err error) {
+func (mw loggingMiddleware) Get(ctx context.Context, id string) (s Sock, err error) {
 	defer func(begin time.Time) {
 		lvs := []interface{}{
 			"method", "Get",
@@ -65,30 +67,31 @@ func (mw loggingMiddleware) Get(id string) (s Sock, err error) {
 		if err != nil {
 			lvs = append(lvs, "err", err)
 		}
+		lvs = append(lvs, TraceLogKV(ctx)...)
 		mw.logger.Log(lvs...)
 	}(time.Now())
-	return mw.next.Get(id)
+	return mw.next.Get(ctx, id)
 }
 
-func (mw loggingMiddleware) Tags() (tags []string, err error) {
+func (mw loggingMiddleware) Tags(ctx context.Context) (tags []string, err error) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		mw.logger.Log(append([]interface{}{
 			"method", "Tags",
 			"result", len(tags),
 			"err", err,
 			"took", time.Since(begin),
-		)
+		}, TraceLogKV(ctx)...)...)
 	}(time.Now())
-	return mw.next.Tags()
+	return mw.next.Tags(ctx)
 }
 
-func (mw loggingMiddleware) Health() (health []Health) {
+func (mw loggingMiddleware) Health(ctx context.Context) (health []Health) {
 	defer func(begin time.Time) {
-		mw.logger.Log(
+		mw.logger.Log(append([]interface{}{
 			"method", "Health",
 			"result", len(health),
 			"took", time.Since(begin),
-		)
+		}, TraceLogKV(ctx)...)...)
 	}(time.Now())
-	return mw.next.Health()
+	return mw.next.Health(ctx)
 }

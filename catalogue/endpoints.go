@@ -37,7 +37,7 @@ func MakeEndpoints(s Service, tracer stdopentracing.Tracer) Endpoints {
 func MakeListEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(listRequest)
-		socks, err := s.List(req.Tags, req.Order, req.PageNum, req.PageSize)
+		socks, err := s.List(ctx, req.Tags, req.Order, req.PageNum, req.PageSize)
 		return listResponse{Socks: socks, Err: err}, err
 	}
 }
@@ -46,7 +46,7 @@ func MakeListEndpoint(s Service) endpoint.Endpoint {
 func MakeCountEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(countRequest)
-		n, err := s.Count(req.Tags)
+		n, err := s.Count(ctx, req.Tags)
 		return countResponse{N: n, Err: err}, err
 	}
 }
@@ -55,7 +55,7 @@ func MakeCountEndpoint(s Service) endpoint.Endpoint {
 func MakeGetEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(getRequest)
-		sock, err := s.Get(req.ID)
+		sock, err := s.Get(ctx, req.ID)
 		return getResponse{Sock: sock, Err: err}, err
 	}
 }
@@ -63,7 +63,7 @@ func MakeGetEndpoint(s Service) endpoint.Endpoint {
 // MakeTagsEndpoint returns an endpoint via the given service.
 func MakeTagsEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		tags, err := s.Tags()
+		tags, err := s.Tags(ctx)
 		return tagsResponse{Tags: tags, Err: err}, err
 	}
 }
@@ -71,7 +71,7 @@ func MakeTagsEndpoint(s Service) endpoint.Endpoint {
 // MakeHealthEndpoint returns current health of the given service.
 func MakeHealthEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		health := s.Health()
+		health := s.Health(ctx)
 		return healthResponse{Health: health}, nil
 	}
 }

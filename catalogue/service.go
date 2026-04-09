@@ -4,6 +4,7 @@ package catalogue
 // catalogue service. Everything here is agnostic to the transport (HTTP).
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -15,11 +16,11 @@ import (
 // Service is the catalogue service, providing read operations on a saleable
 // catalogue of sock products.
 type Service interface {
-	List(tags []string, order string, pageNum, pageSize int) ([]Sock, error) // GET /catalogue
-	Count(tags []string) (int, error)                                        // GET /catalogue/size
-	Get(id string) (Sock, error)                                             // GET /catalogue/{id}
-	Tags() ([]string, error)                                                 // GET /tags
-	Health() []Health                                                        // GET /health
+	List(ctx context.Context, tags []string, order string, pageNum, pageSize int) ([]Sock, error) // GET /catalogue
+	Count(ctx context.Context, tags []string) (int, error)                                      // GET /catalogue/size
+	Get(ctx context.Context, id string) (Sock, error)                                           // GET /catalogue/{id}
+	Tags(ctx context.Context) ([]string, error)                                               // GET /tags
+	Health(ctx context.Context) []Health                                                        // GET /health
 }
 
 // Middleware decorates a Service.
@@ -68,7 +69,7 @@ type catalogueService struct {
 	logger log.Logger
 }
 
-func (s *catalogueService) List(tags []string, order string, pageNum, pageSize int) ([]Sock, error) {
+func (s *catalogueService) List(_ context.Context, tags []string, order string, pageNum, pageSize int) ([]Sock, error) {
 	var socks []Sock
 	query := baseQuery
 
@@ -111,7 +112,7 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	return socks, nil
 }
 
-func (s *catalogueService) Count(tags []string) (int, error) {
+func (s *catalogueService) Count(_ context.Context, tags []string) (int, error) {
 	query := "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id"
 
 	var args []interface{}
@@ -147,7 +148,7 @@ func (s *catalogueService) Count(tags []string) (int, error) {
 	return count, nil
 }
 
-func (s *catalogueService) Get(id string) (Sock, error) {
+func (s *catalogueService) Get(_ context.Context, id string) (Sock, error) {
 	query := baseQuery + " WHERE sock.sock_id =? GROUP BY sock.sock_id;"
 
 	var sock Sock
@@ -163,7 +164,7 @@ func (s *catalogueService) Get(id string) (Sock, error) {
 	return sock, nil
 }
 
-func (s *catalogueService) Health() []Health {
+func (s *catalogueService) Health(_ context.Context) []Health {
 	var health []Health
 	dbstatus := "OK"
 
@@ -181,7 +182,7 @@ func (s *catalogueService) Health() []Health {
 	return health
 }
 
-func (s *catalogueService) Tags() ([]string, error) {
+func (s *catalogueService) Tags(_ context.Context) ([]string, error) {
 	var tags []string
 	query := "SELECT name FROM tag;"
 	rows, err := s.db.Query(query)

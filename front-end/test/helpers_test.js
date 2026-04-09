@@ -43,6 +43,7 @@
 
         chai.request(app).
         get("/category.html/").
+        redirects(0).
         end(function(err, res) {
           expect(res).to.have.status(301);
           done();

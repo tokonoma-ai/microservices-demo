@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -10,8 +11,8 @@ import (
 type Middleware func(Service) Service
 
 type Service interface {
-	Authorise(total float32) (Authorisation, error) // GET /paymentAuth
-	Health() []Health                               // GET /health
+	Authorise(ctx context.Context, total float32) (Authorisation, error) // GET /paymentAuth
+	Health(ctx context.Context) []Health                               // GET /health
 }
 
 type Authorisation struct {
@@ -38,7 +39,7 @@ type service struct {
 	declineOverAmount float32
 }
 
-func (s *service) Authorise(amount float32) (Authorisation, error) {
+func (s *service) Authorise(_ context.Context, amount float32) (Authorisation, error) {
 	if amount == 0 {
 		return Authorisation{}, ErrInvalidPaymentAmount
 	}
@@ -59,7 +60,7 @@ func (s *service) Authorise(amount float32) (Authorisation, error) {
 	}, nil
 }
 
-func (s *service) Health() []Health {
+func (s *service) Health(_ context.Context) []Health {
 	var health []Health
 	app := Health{"payment", "OK", time.Now().String()}
 	health = append(health, app)

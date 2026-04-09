@@ -1,6 +1,9 @@
+require("./tracing");
+
 var request      = require("request")
   , express      = require("express")
   , morgan       = require("morgan")
+  , otelApi      = require("@opentelemetry/api")
   , path         = require("path")
   , bodyParser   = require("body-parser")
   , async        = require("async")
@@ -15,6 +18,16 @@ var request      = require("request")
   , metrics      = require("./api/metrics")
   , app          = express()
 
+morgan.token("trace_id", function () {
+  var span = otelApi.trace.getSpan(otelApi.context.active());
+  if (!span) return "";
+  return span.spanContext().traceId || "";
+});
+morgan.token("span_id", function () {
+  var span = otelApi.trace.getSpan(otelApi.context.active());
+  if (!span) return "";
+  return span.spanContext().spanId || "";
+});
 
 app.use(helpers.rewriteSlash);
 app.use(metrics);
@@ -31,7 +44,11 @@ else {
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(helpers.sessionMiddleware);
-app.use(morgan("dev", {}));
+app.use(
+  morgan(
+    ":method :url :status :response-time ms - trace_id=:trace_id span_id=:span_id"
+  )
+);
 
 var domain = "";
 process.argv.forEach(function (val, index, array) {

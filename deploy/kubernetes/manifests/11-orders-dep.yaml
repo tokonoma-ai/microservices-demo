@@ -21,7 +21,11 @@ spec:
         image: weaveworksdemos/orders:0.4.7
         env:
          - name: JAVA_OPTS
-           value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+           value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dzipkin_enabled=true -Dzipkin_host=otel-collector-opentelemetry-collector.platform.svc.cluster.local
+         - name: MANAGEMENT_TRACING_ENABLED
+           value: "true"
+         - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+           value: "http://otel-collector-opentelemetry-collector.platform.svc.cluster.local:9411/api/v2/spans"
         resources:
           limits:
             cpu: 500m

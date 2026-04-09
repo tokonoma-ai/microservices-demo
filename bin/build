@@ -47,7 +47,11 @@ if git -C "${REPO_ROOT}" diff --quiet HEAD -- ':!deploy/kubernetes/overlays/*/ku
   TAG="dev-${GIT_SHA}"
 else
   GIT_DIRTY=true
-  TAG="dev-${GIT_SHA}-dirty"
+  # Hash the diff content so each unique set of uncommitted changes gets a unique tag.
+  # This prevents nodes from serving stale cached images when a dirty build is rebuilt.
+  DIFF_HASH=$(git -C "${REPO_ROOT}" diff HEAD -- ':!deploy/kubernetes/overlays/*/kustomization.yaml' \
+    | python3 -c "import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:7])")
+  TAG="dev-${GIT_SHA}-dirty-${DIFF_HASH}"
 fi
 
 # --- Target-specific config ---------------------------------------------------

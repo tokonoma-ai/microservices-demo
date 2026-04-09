@@ -33,6 +33,8 @@ spec:
           value: user-db:27017
         - name: HATEAOS
           value: user
+        - name: ZIPKIN
+          value: http://otel-collector-opentelemetry-collector.platform.svc.cluster.local:9411/api/v1/spans
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
