@@ -31,6 +31,12 @@ morgan.token("span_id", function () {
 
 app.use(helpers.rewriteSlash);
 app.use(metrics);
+// Morgan before static so GET /, /css/..., etc. still emit access lines with trace_id/span_id.
+app.use(
+  morgan(
+    ":method :url :status :response-time ms - trace_id=:trace_id span_id=:span_id"
+  )
+);
 app.use(express.static("public"));
 if(process.env.SESSION_REDIS) {
     console.log('Using the redis based session manager');
@@ -44,11 +50,6 @@ else {
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(helpers.sessionMiddleware);
-app.use(
-  morgan(
-    ":method :url :status :response-time ms - trace_id=:trace_id span_id=:span_id"
-  )
-);
 
 var domain = "";
 process.argv.forEach(function (val, index, array) {
