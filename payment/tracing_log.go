@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	stdopentracing "github.com/opentracing/opentracing-go"
+	zipkintracer "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	"github.com/openzipkin/zipkin-go/model"
 )
 
 // TraceLogKV returns trace_id and span_id key-value pairs (B3 hex) for logfmt lines.
@@ -18,6 +20,14 @@ func TraceLogKV(ctx context.Context) []interface{} {
 }
 
 func b3HexFromSpan(sp stdopentracing.Span) (traceID, spanID string) {
+	if zctx, ok := sp.Context().(zipkintracer.SpanContext); ok {
+		mc := model.SpanContext(zctx)
+		traceID = mc.TraceID.String()
+		spanID = mc.ID.String()
+		if traceID != "" && !mc.TraceID.Empty() && spanID != "" && mc.ID != 0 {
+			return traceID, spanID
+		}
+	}
 	m := make(map[string]string)
 	if err := stdopentracing.GlobalTracer().Inject(sp.Context(), stdopentracing.TextMap, stdopentracing.TextMapCarrier(m)); err == nil {
 		traceID, spanID = pickB3(m)

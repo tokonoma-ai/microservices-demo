@@ -3,6 +3,7 @@ package works.weave.socks.shipping.middleware;
 import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -52,7 +53,7 @@ public class HTTPMonitoringInterceptor implements HandlerInterceptor {
         long elapsedMs = elapsedNs / 1_000_000;
         String method = httpServletRequest.getMethod();
         int status = httpServletResponse.getStatus();
-        log.info("{} {} {} {}ms", method, path, status, elapsedMs);
+        logHttpAccessLine(log, method, path, status, elapsedMs);
         try {
             requestLatency.labels(
                     serviceName,
@@ -62,6 +63,16 @@ public class HTTPMonitoringInterceptor implements HandlerInterceptor {
             ).observe(elapsedNs / 1_000_000_000.0);
         } catch (Exception ex) {
             log.debug("Could not record request metric: {}", ex.getMessage());
+        }
+    }
+
+    private static void logHttpAccessLine(Logger log, String method, String path, int status, long elapsedMs) {
+        String tid = MDC.get("traceId");
+        String sid = MDC.get("spanId");
+        if (tid != null && !tid.isEmpty() && sid != null && !sid.isEmpty()) {
+            log.info("{} {} {} {}ms | traceId={} spanId={}", method, path, status, elapsedMs, tid, sid);
+        } else {
+            log.info("{} {} {} {}ms", method, path, status, elapsedMs);
         }
     }
 }
