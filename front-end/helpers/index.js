@@ -102,11 +102,6 @@
     // Check if logged in. Get customer Id
     var logged_in = req.cookies.logged_in;
 
-    // TODO REMOVE THIS, SECURITY RISK
-    if (env == "development" && req.query.custId != null) {
-      return req.query.custId;
-    }
-
     if (!logged_in) {
       if (!req.session.id) {
         throw new Error("User not logged in.");

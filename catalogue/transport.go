@@ -94,8 +94,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case ErrNotFound:
 		code = http.StatusNotFound
 	}
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":       err.Error(),
 		"status_code": code,

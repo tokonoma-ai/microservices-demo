@@ -238,7 +238,8 @@
                 console.log("set cookie" + custId);
                 res.status(200);
                 res.cookie(cookie_name, req.session.id, {
-                    maxAge: 3600000
+                    maxAge: 3600000,
+                    sameSite: 'Strict'
                 }).send({id: custId});
                 console.log("Sent cookies.");
                 res.end();
@@ -303,7 +304,8 @@
                 }
                 res.status(200);
                 res.cookie(cookie_name, req.session.id, {
-                    maxAge: 3600000
+                    maxAge: 3600000,
+                    sameSite: 'Strict'
                 }).send('Cookie is set');
                 console.log("Sent cookies.");
                 res.end();
