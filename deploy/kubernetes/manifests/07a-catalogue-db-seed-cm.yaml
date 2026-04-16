@@ -52,9 +52,8 @@ data:
     -- but can be accessed directly via /catalogue/{id}
     INSERT INTO sock VALUES ("bad00001-0000-0000-0000-000000000001", "Ghost", "This sock exists but has no tags. It won't appear in catalogue searches due to the JOIN query, but can be added to cart via direct link. A classic 'invisible product' bug.", 25.00, 100, "/catalogue/images/classic.jpg", "/catalogue/images/classic2.jpg");
 
-    -- Cursed Sock: Has negative price, which can cause checkout to fail with invalid payment amount
-    -- when combined with low-value items (total can drop below $0)
-    INSERT INTO sock VALUES ("bad00002-0000-0000-0000-000000000002", "Cursed", "This sock has a negative price due to a data entry error. When added to cart with other items, it can cause the order total to become negative, triggering payment validation failures.", -5.00, 50, "/catalogue/images/holy_1.jpeg", "/catalogue/images/holy_2.jpeg");
+    -- Cursed Sock: troubleshooting demo (magic tag). Price must stay non-negative so cart and payment totals remain valid.
+    INSERT INTO sock VALUES ("bad00002-0000-0000-0000-000000000002", "Cursed", "Demo sock for troubleshooting listings. Price is corrected to a valid retail amount so combined cart totals no longer violate payment validation.", 5.00, 50, "/catalogue/images/holy_1.jpeg", "/catalogue/images/holy_2.jpeg");
 
     INSERT INTO tag (name) VALUES ("brown");
     INSERT INTO tag (name) VALUES ("geek");
