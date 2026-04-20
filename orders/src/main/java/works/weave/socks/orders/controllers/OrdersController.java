@@ -143,6 +143,9 @@ public class OrdersController {
         float shipping = 4.99F;
         amount += items.stream().mapToDouble(i -> i.getQuantity() * i.getUnitPrice()).sum();
         amount += shipping;
+        if (amount <= 0) {
+            throw new InvalidOrderException("Calculated order total is invalid: " + amount);
+        }
         return amount;
     }
 
