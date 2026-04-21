@@ -138,9 +138,14 @@ public class OrdersController {
         return matcher.group(0);
     }
 
-    private float calculateTotal(List<Item> items) {
+    float calculateTotal(List<Item> items) {
         float amount = 0F;
         float shipping = 4.99F;
+        for (Item item : items) {
+            if (item.getUnitPrice() < 0) {
+                throw new InvalidOrderException("Cart contains item with invalid negative price: " + item.getItemId());
+            }
+        }
         amount += items.stream().mapToDouble(i -> i.getQuantity() * i.getUnitPrice()).sum();
         amount += shipping;
         return amount;
