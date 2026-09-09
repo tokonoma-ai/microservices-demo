@@ -1,4 +1,18 @@
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  labels:
+    name: rabbitmq
+  namespace: sock-shop
+data:
+  # 3.6.8 shipped `[{rabbit,[{loopback_users,[]}]}]` in its own image. Later
+  # images do not, and guest is loopback-only without it, so shipping and
+  # queue-master get ACCESS_REFUSED on every connection.
+  10-loopback.conf: |
+    loopback_users.guest = false
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,16 +30,30 @@ spec:
       labels:
         name: rabbitmq
       annotations:
+        # The Service carries the scrape annotations; scraping both would
+        # collect the same endpoint twice.
         prometheus.io/scrape: "false"
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3.6.8-management
+        image: rabbitmq:3.13-management
         ports:
         - containerPort: 15672
           name: management
         - containerPort: 5672
           name: rabbitmq
+        # rabbitmq_prometheus is enabled by default from 3.8 and serves queue
+        # metrics directly, so the sidecar exporter is gone.
+        - containerPort: 15692
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /etc/rabbitmq/conf.d/10-loopback.conf
+          subPath: 10-loopback.conf
+        # The root filesystem is read-only, and the broker writes its mnesia
+        # dir and .erlang.cookie under /var/lib/rabbitmq at startup.
+        - name: data
+          mountPath: /var/lib/rabbitmq
         securityContext:
           capabilities:
             drop:
@@ -36,10 +64,11 @@ spec:
               - SETUID
               - DAC_OVERRIDE
           readOnlyRootFilesystem: true
-      - name: rabbitmq-exporter
-        image: kbudde/rabbitmq-exporter
-        ports:
-        - containerPort: 9090
-          name: exporter
+      volumes:
+      - name: config
+        configMap:
+          name: rabbitmq-config
+      - name: data
+        emptyDir: {}
       nodeSelector:
         beta.kubernetes.io/os: linux
