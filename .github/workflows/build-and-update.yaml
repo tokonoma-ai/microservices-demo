@@ -50,7 +50,7 @@ jobs:
         fi
 
     - name: Configure kubectl
-      run: aws eks update-kubeconfig --name tokonoma --region us-west-2
+      run: aws eks update-kubeconfig --name tokonoma-demo --region us-west-2
 
     - name: Deploy to EKS
       run: |
