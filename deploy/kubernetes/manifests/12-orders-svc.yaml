@@ -5,6 +5,8 @@ metadata:
   name: orders
   annotations:
         prometheus.io/scrape: 'true'
+        # Spring Boot actuator serves metrics here, not at /metrics (404).
+        prometheus.io/path: /actuator/prometheus
   labels:
     name: orders
   namespace: sock-shop
