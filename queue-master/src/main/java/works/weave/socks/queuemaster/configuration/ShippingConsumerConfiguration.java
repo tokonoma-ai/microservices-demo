@@ -36,6 +36,9 @@ public class ShippingConsumerConfiguration extends RabbitMqConfiguration
 		container.setConnectionFactory(connectionFactory());
 		container.setQueueNames(this.queueName);
 		container.setMessageListener(messageListenerAdapter());
+		// There is no dead-letter queue: a message the listener cannot handle is dropped after one
+		// logged failure rather than requeued and redelivered forever.
+		container.setDefaultRequeueRejected(false);
 
 		return container;
 	}
