@@ -154,6 +154,7 @@ Images:
 {
   "target": "eks",
   "git_sha": "a3f7c21",
+  "git_sha_full": "a3f7c21e4d9b0c6f2a8e1d7b3c5f9a0e6d2b4c81",
   "dirty": false,
   "tag": "dev-a3f7c21",
   "built_at": "2026-03-04T20:15:00Z",
@@ -168,6 +169,10 @@ Images:
 `bin/deploy` reads this manifest to:
 1. Generate the kustomization overlay with per-service image tags
 2. Validate the target matches (errors if you `build --kind` then `deploy --eks`)
+3. Annotate each service's pod template with `resource.opentelemetry.io/vcs.repository.url.full`
+   (from `git remote get-url origin`) and `resource.opentelemetry.io/vcs.ref.head.revision`
+   (`git_sha_full`), which the OTel collector attaches to every log and span as resource
+   attributes; dirty builds omit the revision because the image is not that commit
 
 ## Tracing a deployed image back to code
 
@@ -243,7 +248,8 @@ deploy/kubernetes/
 ```
 
 The overlay `kustomization.yaml` files are generated at deploy time with
-per-service image overrides derived from the build manifest. The base manifests
+per-service image overrides and VCS pod annotations derived from the build
+manifest. The base manifests
 use upstream image tags as Kustomize defaults; they are never deployed
 directly — all deployments go through an overlay.
 
