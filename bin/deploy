@@ -152,7 +152,7 @@ if annotations:
     print('          metadata:')
     print('            annotations:')
     for k, v in annotations.items():
-        print(f'              {k}: {v}')
+        print(f'              {k}: {json.dumps(v)}')
 "
 } > "$GENERATED_KUSTOMIZATION"
 
