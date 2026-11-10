@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import works.weave.socks.shipping.entities.Shipment;
 
+import java.util.Map;
+
 public class RabbitMqConfiguration
 {
     final static String queueName = "shipping-task";
@@ -48,6 +50,9 @@ public class RabbitMqConfiguration
     {
         DefaultClassMapper typeMapper = new DefaultClassMapper();
         typeMapper.setDefaultType(Shipment.class);
+        // The shipping service stamps its own Shipment class name in __TypeId__, which is outside the
+        // mapper's trusted packages; map it to the local class instead of trusting arbitrary type ids.
+        typeMapper.setIdClassMapping(Map.of("works.weave.socks.shipping.entities.Shipment", Shipment.class));
         return typeMapper;
     }
 
