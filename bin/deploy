@@ -57,6 +57,39 @@ echo "Deploying Sock Shop (target: ${TARGET})"
 echo "  Manifest: ${MANIFEST_TAG} (${MANIFEST_SHA})"
 echo ""
 
+# --- VCS pod annotations ------------------------------------------------------
+# Each service pod is annotated with its repo URL and commit. The collector's
+# k8sattributes processor (extract.otel_annotations) turns
+# resource.opentelemetry.io/<attr> annotations into resource attributes, so
+# every log line and span from the pod carries vcs.repository.url.full and
+# vcs.ref.head.revision.
+
+MANIFEST_DIRTY=$(python3 -c "import json; print(json.load(open('${MANIFEST}')).get('dirty', False))")
+MANIFEST_SHA_FULL=$(python3 -c "import json; print(json.load(open('${MANIFEST}')).get('git_sha_full', ''))")
+
+VCS_URL=$(git -C "${REPO_ROOT}" remote get-url origin 2>/dev/null || true)
+case "$VCS_URL" in
+  git@github.com:*)     VCS_URL="https://github.com/${VCS_URL#git@github.com:}" ;;
+  https://github.com/*) ;;
+  *)                    VCS_URL="" ;;
+esac
+VCS_URL="${VCS_URL%.git}"
+if [[ -z "$VCS_URL" ]]; then
+  echo "Warning: cannot derive a GitHub URL from 'git remote get-url origin'; omitting the vcs.repository.url.full annotation."
+fi
+
+VCS_REV=""
+if [[ "$MANIFEST_DIRTY" == "True" ]]; then
+  echo "Warning: dirty build (${MANIFEST_TAG}) does not match commit ${MANIFEST_SHA}; omitting the vcs.ref.head.revision annotation."
+elif [[ -n "$MANIFEST_SHA_FULL" ]]; then
+  VCS_REV="$MANIFEST_SHA_FULL"
+elif VCS_REV=$(git -C "${REPO_ROOT}" rev-parse --verify --quiet "${MANIFEST_SHA}^{commit}"); then
+  :
+else
+  echo "Warning: manifest has no git_sha_full and ${MANIFEST_SHA} is not a known commit; omitting the vcs.ref.head.revision annotation."
+fi
+export VCS_URL VCS_REV
+
 # --- Generate kustomization.yaml from manifest --------------------------------
 
 OVERLAY="${REPO_ROOT}/deploy/kubernetes/overlays/${TARGET}"
@@ -90,6 +123,36 @@ for svc, info in m['services'].items():
         print(f'  - name: weaveworksdemos/{svc}')
         print(f'    newName: {name_part}')
         print(f'    newTag: \"{tag}\"')
+"
+
+  python3 -c "
+import json, os
+m = json.load(open('${MANIFEST}'))
+annotations = {
+    'resource.opentelemetry.io/vcs.repository.url.full': os.environ['VCS_URL'],
+    'resource.opentelemetry.io/vcs.ref.head.revision': os.environ['VCS_REV'],
+}
+annotations = {k: v for k, v in annotations.items() if v}
+if annotations:
+    # One strategic-merge patch for the service Deployments built from this
+    # repo; the -db, rabbitmq and session-db Deployments run upstream images.
+    names = '|'.join(m['services'])
+    print('')
+    print('patches:')
+    print('  - target:')
+    print('      kind: Deployment')
+    print(f'      name: ^({names})$')
+    print('    patch: |-')
+    print('      apiVersion: apps/v1')
+    print('      kind: Deployment')
+    print('      metadata:')
+    print('        name: not-used')
+    print('      spec:')
+    print('        template:')
+    print('          metadata:')
+    print('            annotations:')
+    for k, v in annotations.items():
+        print(f'              {k}: {json.dumps(v)}')
 "
 } > "$GENERATED_KUSTOMIZATION"
 

@@ -42,6 +42,7 @@ fi
 # --- Git SHA and tag ----------------------------------------------------------
 
 GIT_SHA=$(git -C "${REPO_ROOT}" rev-parse --short=7 HEAD)
+GIT_SHA_FULL=$(git -C "${REPO_ROOT}" rev-parse HEAD)
 if git -C "${REPO_ROOT}" diff --quiet HEAD -- ':!deploy/kubernetes/overlays/*/kustomization.yaml' 2>/dev/null; then
   GIT_DIRTY=false
   TAG="dev-${GIT_SHA}"
@@ -273,7 +274,7 @@ esac
 
 _DIRTY_PY=$( [ "$GIT_DIRTY" = "true" ] && echo "True" || echo "False" )
 export _SVCS="$RESULT_SVCS" _TAGS="$RESULT_TAGS" _IMGS="$RESULT_IMAGES" _SHAS="$RESULT_SHAS"
-export _TARGET="$TARGET" _GIT_SHA="$GIT_SHA" _DIRTY_PY _TAG="$TAG" _MANIFEST="$MANIFEST"
+export _TARGET="$TARGET" _GIT_SHA="$GIT_SHA" _GIT_SHA_FULL="$GIT_SHA_FULL" _DIRTY_PY _TAG="$TAG" _MANIFEST="$MANIFEST"
 python3 << 'PYEOF'
 import json, os
 from datetime import datetime, timezone
@@ -290,6 +291,7 @@ for i, svc in enumerate(svcs):
 manifest = {
     "target": os.environ["_TARGET"],
     "git_sha": os.environ["_GIT_SHA"],
+    "git_sha_full": os.environ["_GIT_SHA_FULL"],
     "dirty": os.environ["_DIRTY_PY"] == "True",
     "tag": os.environ["_TAG"],
     "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
